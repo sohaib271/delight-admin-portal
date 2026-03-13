@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, CalendarCheck, BookOpen, Trophy, Wallet, LogOut, Menu, X } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, BookOpen, Trophy, Wallet, LogOut, X } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -32,20 +32,20 @@ const AdminSidebar = ({ isOpen, onToggle }: AdminSidebarProps) => {
         )}
       </AnimatePresence>
 
-      {/* Mobile toggle */}
-      <button
-        onClick={onToggle}
-        className="fixed left-4 top-4 z-50 rounded-lg bg-sidebar p-2 lg:hidden"
-      >
-        {isOpen ? <X className="h-5 w-5 text-sidebar-foreground" /> : <Menu className="h-5 w-5 text-foreground" />}
-      </button>
-
       {/* Sidebar */}
       <aside
         className={`fixed left-0 top-0 z-40 flex h-full w-64 flex-col bg-sidebar transition-transform duration-300 lg:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
+        {/* Close button on mobile */}
+        <button
+          onClick={onToggle}
+          className="absolute right-3 top-4 rounded-lg p-1.5 text-sidebar-foreground hover:bg-sidebar-hover lg:hidden"
+        >
+          <X className="h-5 w-5" />
+        </button>
+
         {/* Logo */}
         <div className="flex items-center gap-3 px-6 py-6">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
