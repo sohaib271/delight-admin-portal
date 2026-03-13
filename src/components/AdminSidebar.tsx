@@ -1,0 +1,101 @@
+import { LayoutDashboard, Users, CalendarCheck, BookOpen, Trophy, Wallet, LogOut, Menu, X } from "lucide-react";
+import { NavLink } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+
+const navItems = [
+  { to: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/admin/students", icon: Users, label: "Students" },
+  { to: "/admin/attendance", icon: CalendarCheck, label: "Attendance" },
+  { to: "/admin/subjects", icon: BookOpen, label: "Subjects" },
+  { to: "/admin/score", icon: Trophy, label: "Score" },
+  { to: "/admin/accounts", icon: Wallet, label: "Accounts" },
+];
+
+interface AdminSidebarProps {
+  isOpen: boolean;
+  onToggle: () => void;
+}
+
+const AdminSidebar = ({ isOpen, onToggle }: AdminSidebarProps) => {
+  return (
+    <>
+      {/* Mobile overlay */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-40 bg-foreground/50 lg:hidden"
+            onClick={onToggle}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Mobile toggle */}
+      <button
+        onClick={onToggle}
+        className="fixed left-4 top-4 z-50 rounded-lg bg-sidebar p-2 lg:hidden"
+      >
+        {isOpen ? <X className="h-5 w-5 text-sidebar-foreground" /> : <Menu className="h-5 w-5 text-foreground" />}
+      </button>
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed left-0 top-0 z-40 flex h-full w-64 flex-col bg-sidebar transition-transform duration-300 lg:translate-x-0 ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {/* Logo */}
+        <div className="flex items-center gap-3 px-6 py-6">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
+            <Users className="h-5 w-5 text-primary-foreground" />
+          </div>
+          <span className="font-display text-lg font-bold text-card">Student App</span>
+        </div>
+
+        {/* Avatar */}
+        <div className="mx-4 mb-6 flex items-center gap-3 rounded-xl bg-sidebar-hover px-4 py-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+            JD
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-card">John Doe</p>
+            <p className="text-xs text-sidebar-foreground">Administrator</p>
+          </div>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 space-y-1 px-3">
+          {navItems.map((item, i) => (
+            <motion.div
+              key={item.to}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.05 }}
+            >
+              <NavLink
+                to={item.to}
+                onClick={() => window.innerWidth < 1024 && onToggle()}
+                className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}
+              >
+                <item.icon className="h-5 w-5" />
+                {item.label}
+              </NavLink>
+            </motion.div>
+          ))}
+        </nav>
+
+        {/* Logout */}
+        <div className="p-3">
+          <NavLink to="/" className="sidebar-link text-destructive">
+            <LogOut className="h-5 w-5" />
+            Logout
+          </NavLink>
+        </div>
+      </aside>
+    </>
+  );
+};
+
+export default AdminSidebar;
