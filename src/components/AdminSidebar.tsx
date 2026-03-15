@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, CalendarCheck, BookOpen, Trophy, Wallet, LogOut, X } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, BookOpen, Trophy, Wallet, GraduationCap, LogOut, X } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
