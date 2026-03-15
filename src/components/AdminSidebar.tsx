@@ -1,10 +1,26 @@
-import { LayoutDashboard, Users, CalendarCheck, BookOpen, Trophy, Wallet, GraduationCap, LogOut, X } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { useState } from "react";
+import { LayoutDashboard, Users, CalendarCheck, BookOpen, Trophy, Wallet, GraduationCap, LogOut, X, ChevronDown } from "lucide-react";
+import { NavLink, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
-const navItems = [
+interface NavItem {
+  to: string;
+  icon: React.ElementType;
+  label: string;
+  children?: { to: string; label: string }[];
+}
+
+const navItems: NavItem[] = [
   { to: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/admin/students", icon: Users, label: "Students" },
+  {
+    to: "/admin/students",
+    icon: Users,
+    label: "Students",
+    children: [
+      { to: "/admin/students/intermediate", label: "Intermediate" },
+      { to: "/admin/students/bs-adp", label: "BS / ADP" },
+    ],
+  },
   { to: "/admin/faculty", icon: GraduationCap, label: "Faculty" },
   { to: "/admin/attendance", icon: CalendarCheck, label: "Attendance" },
   { to: "/admin/subjects", icon: BookOpen, label: "Subjects" },
@@ -18,9 +34,17 @@ interface AdminSidebarProps {
 }
 
 const AdminSidebar = ({ isOpen, onToggle }: AdminSidebarProps) => {
+  const location = useLocation();
+  const [expandedItems, setExpandedItems] = useState<string[]>(
+    location.pathname.includes("/students") ? ["/admin/students"] : []
+  );
+
+  const toggleExpand = (to: string) => {
+    setExpandedItems((prev) => (prev.includes(to) ? prev.filter((i) => i !== to) : [...prev, to]));
+  };
+
   return (
     <>
-      {/* Mobile overlay */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -33,13 +57,11 @@ const AdminSidebar = ({ isOpen, onToggle }: AdminSidebarProps) => {
         )}
       </AnimatePresence>
 
-      {/* Sidebar */}
       <aside
         className={`fixed left-0 top-0 z-40 flex h-full w-64 flex-col bg-sidebar transition-transform duration-300 lg:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* Close button on mobile */}
         <button
           onClick={onToggle}
           className="absolute right-3 top-4 rounded-lg p-1.5 text-sidebar-foreground hover:bg-sidebar-hover lg:hidden"
@@ -47,7 +69,6 @@ const AdminSidebar = ({ isOpen, onToggle }: AdminSidebarProps) => {
           <X className="h-5 w-5" />
         </button>
 
-        {/* Logo */}
         <div className="flex items-center gap-3 px-6 py-6">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
             <Users className="h-5 w-5 text-primary-foreground" />
@@ -55,7 +76,6 @@ const AdminSidebar = ({ isOpen, onToggle }: AdminSidebarProps) => {
           <span className="font-display text-lg font-bold text-card">Student App</span>
         </div>
 
-        {/* Avatar */}
         <div className="mx-4 mb-6 flex items-center gap-3 rounded-xl bg-sidebar-hover px-4 py-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
             JD
@@ -66,8 +86,7 @@ const AdminSidebar = ({ isOpen, onToggle }: AdminSidebarProps) => {
           </div>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 space-y-1 px-3">
+        <nav className="flex-1 space-y-1 px-3 overflow-y-auto">
           {navItems.map((item, i) => (
             <motion.div
               key={item.to}
@@ -75,19 +94,68 @@ const AdminSidebar = ({ isOpen, onToggle }: AdminSidebarProps) => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.05 }}
             >
-              <NavLink
-                to={item.to}
-                onClick={() => window.innerWidth < 1024 && onToggle()}
-                className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.label}
-              </NavLink>
+              {item.children ? (
+                <div>
+                  <button
+                    onClick={() => toggleExpand(item.to)}
+                    className={`sidebar-link w-full justify-between ${
+                      location.pathname.startsWith(item.to) ? "active" : ""
+                    }`}
+                  >
+                    <span className="flex items-center gap-3">
+                      <item.icon className="h-5 w-5" />
+                      {item.label}
+                    </span>
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform ${
+                        expandedItems.includes(item.to) ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  <AnimatePresence>
+                    {expandedItems.includes(item.to) && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="ml-8 mt-1 space-y-1 border-l border-sidebar-foreground/20 pl-3">
+                          {item.children.map((child) => (
+                            <NavLink
+                              key={child.to}
+                              to={child.to}
+                              onClick={() => window.innerWidth < 1024 && onToggle()}
+                              className={({ isActive }) =>
+                                `block rounded-md px-3 py-2 text-sm transition-colors ${
+                                  isActive
+                                    ? "bg-primary/20 font-medium text-card"
+                                    : "text-sidebar-foreground hover:bg-sidebar-hover hover:text-card"
+                                }`
+                              }
+                            >
+                              {child.label}
+                            </NavLink>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <NavLink
+                  to={item.to}
+                  onClick={() => window.innerWidth < 1024 && onToggle()}
+                  className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}
+                >
+                  <item.icon className="h-5 w-5" />
+                  {item.label}
+                </NavLink>
+              )}
             </motion.div>
           ))}
         </nav>
 
-        {/* Logout */}
         <div className="p-3">
           <NavLink to="/" className="sidebar-link text-destructive">
             <LogOut className="h-5 w-5" />
