@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 const routeTitles: Record<string, string> = {
   dashboard: "Dashboard",
   students: "Students",
+  faculty: "Faculty",
   attendance: "Attendance",
   subjects: "Subjects",
   score: "Score",

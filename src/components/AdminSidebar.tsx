@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const navItems = [
   { to: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/admin/students", icon: Users, label: "Students" },
+  { to: "/admin/faculty", icon: GraduationCap, label: "Faculty" },
   { to: "/admin/attendance", icon: CalendarCheck, label: "Attendance" },
   { to: "/admin/subjects", icon: BookOpen, label: "Subjects" },
   { to: "/admin/score", icon: Trophy, label: "Score" },
