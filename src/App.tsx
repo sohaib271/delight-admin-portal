@@ -11,6 +11,7 @@ import Attendance from "./pages/Attendance";
 import Subjects from "./pages/Subjects";
 import Score from "./pages/Score";
 import Accounts from "./pages/Accounts";
+import Faculty from "./pages/Faculty";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
