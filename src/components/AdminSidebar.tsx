@@ -1,10 +1,11 @@
-import { LayoutDashboard, Users, CalendarCheck, BookOpen, Trophy, Wallet, LogOut, X } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, BookOpen, Trophy, Wallet, GraduationCap, LogOut, X } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
   { to: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/admin/students", icon: Users, label: "Students" },
+  { to: "/admin/faculty", icon: GraduationCap, label: "Faculty" },
   { to: "/admin/attendance", icon: CalendarCheck, label: "Attendance" },
   { to: "/admin/subjects", icon: BookOpen, label: "Subjects" },
   { to: "/admin/score", icon: Trophy, label: "Score" },

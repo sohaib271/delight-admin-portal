@@ -94,3 +94,29 @@ export const accounts: Account[] = students.map((s) => ({
 }));
 
 export const classes = ["5th Class", "6th Class", "7th Class", "8th Class", "9th Class", "10th Class"];
+
+export interface FacultyMember {
+  id: string;
+  firstName: string;
+  lastName: string;
+  doj: string;
+  hod?: string;
+  department?: string;
+}
+
+export const professors: FacultyMember[] = [
+  { id: "p1", firstName: "Rajesh", lastName: "Sharma", doj: "15/03/2018", hod: "Yes", department: "Computer Science" },
+  { id: "p2", firstName: "Sunita", lastName: "Verma", doj: "22/07/2019", hod: "No", department: "Mathematics" },
+  { id: "p3", firstName: "Amit", lastName: "Patel", doj: "10/01/2020", hod: "Yes", department: "Physics" },
+  { id: "p4", firstName: "Priya", lastName: "Nair", doj: "05/06/2017", hod: "No", department: "English" },
+  { id: "p5", firstName: "Vikram", lastName: "Singh", doj: "18/09/2021", hod: "No", department: "Chemistry" },
+];
+
+export const principals: FacultyMember[] = [
+  { id: "pr1", firstName: "Dr. Suresh", lastName: "Kumar", doj: "01/04/2015" },
+];
+
+export const vicePrincipals: FacultyMember[] = [
+  { id: "vp1", firstName: "Meena", lastName: "Iyer", doj: "12/08/2016" },
+  { id: "vp2", firstName: "Ramesh", lastName: "Gupta", doj: "03/11/2019" },
+];

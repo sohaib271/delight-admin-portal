@@ -11,6 +11,7 @@ import Attendance from "./pages/Attendance";
 import Subjects from "./pages/Subjects";
 import Score from "./pages/Score";
 import Accounts from "./pages/Accounts";
+import Faculty from "./pages/Faculty";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="students" element={<Students />} />
+            <Route path="faculty" element={<Faculty />} />
             <Route path="attendance" element={<Attendance />} />
             <Route path="subjects" element={<Subjects />} />
             <Route path="score" element={<Score />} />
