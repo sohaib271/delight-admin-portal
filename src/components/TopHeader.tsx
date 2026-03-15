@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 const routeTitles: Record<string, string> = {
   dashboard: "Dashboard",
   students: "Students",
+  intermediate: "Intermediate Students",
+  "bs-adp": "BS / ADP Students",
   faculty: "Faculty",
   attendance: "Attendance",
   subjects: "Subjects",
@@ -18,8 +20,14 @@ interface TopHeaderProps {
 
 const TopHeader = ({ onMenuToggle }: TopHeaderProps) => {
   const location = useLocation();
-  const segment = location.pathname.split("/").pop() || "dashboard";
-  const title = routeTitles[segment] || "Dashboard";
+  const segments = location.pathname.split("/").filter(Boolean);
+  const lastSegment = segments[segments.length - 1] || "dashboard";
+  const title = routeTitles[lastSegment] || "Dashboard";
+
+  const breadcrumb = segments
+    .filter((s) => s !== "admin")
+    .map((s) => routeTitles[s] || s)
+    .join(" / ");
 
   return (
     <motion.header
@@ -36,7 +44,7 @@ const TopHeader = ({ onMenuToggle }: TopHeaderProps) => {
         </button>
         <div>
           <h1 className="font-display text-lg font-bold text-foreground">{title}</h1>
-          <p className="text-xs text-muted-foreground">Admin / {title}</p>
+          <p className="text-xs text-muted-foreground">Admin / {breadcrumb}</p>
         </div>
       </div>
 

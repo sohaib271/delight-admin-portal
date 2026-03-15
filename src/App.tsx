@@ -7,6 +7,8 @@ import Login from "./pages/Login";
 import AdminLayout from "./components/AdminLayout";
 import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
+import IntermediateStudents from "./pages/IntermediateStudents";
+import BsAdpStudents from "./pages/BsAdpStudents";
 import Attendance from "./pages/Attendance";
 import Subjects from "./pages/Subjects";
 import Score from "./pages/Score";
@@ -28,6 +30,8 @@ const App = () => (
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="students" element={<Students />} />
+            <Route path="students/intermediate" element={<IntermediateStudents />} />
+            <Route path="students/bs-adp" element={<BsAdpStudents />} />
             <Route path="faculty" element={<Faculty />} />
             <Route path="attendance" element={<Attendance />} />
             <Route path="subjects" element={<Subjects />} />
