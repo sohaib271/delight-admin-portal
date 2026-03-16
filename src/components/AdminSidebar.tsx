@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LayoutDashboard, Users, CalendarCheck, BookOpen, Trophy, Wallet, GraduationCap, LogOut, X, ChevronDown } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, BookOpen, Trophy, Wallet, GraduationCap, LogOut, X, ChevronDown, School } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -22,10 +22,51 @@ const navItems: NavItem[] = [
     ],
   },
   { to: "/admin/faculty", icon: GraduationCap, label: "Faculty" },
-  { to: "/admin/attendance", icon: CalendarCheck, label: "Attendance" },
-  { to: "/admin/subjects", icon: BookOpen, label: "Subjects" },
-  { to: "/admin/score", icon: Trophy, label: "Score" },
-  { to: "/admin/accounts", icon: Wallet, label: "Accounts" },
+  {
+    to: "/admin/classes",
+    icon: School,
+    label: "Classes",
+    children: [
+      { to: "/admin/classes/intermediate", label: "Intermediate" },
+      { to: "/admin/classes/bs-adp", label: "BS / ADP" },
+    ],
+  },
+  {
+    to: "/admin/attendance",
+    icon: CalendarCheck,
+    label: "Attendance",
+    children: [
+      { to: "/admin/attendance/intermediate", label: "Intermediate" },
+      { to: "/admin/attendance/bs-adp", label: "BS / ADP" },
+    ],
+  },
+  {
+    to: "/admin/subjects",
+    icon: BookOpen,
+    label: "Subjects",
+    children: [
+      { to: "/admin/subjects/intermediate", label: "Intermediate" },
+      { to: "/admin/subjects/bs-adp", label: "BS / ADP" },
+    ],
+  },
+  {
+    to: "/admin/score",
+    icon: Trophy,
+    label: "Score",
+    children: [
+      { to: "/admin/score/intermediate", label: "Intermediate" },
+      { to: "/admin/score/bs-adp", label: "BS / ADP" },
+    ],
+  },
+  {
+    to: "/admin/accounts",
+    icon: Wallet,
+    label: "Accounts",
+    children: [
+      { to: "/admin/accounts/intermediate", label: "Intermediate" },
+      { to: "/admin/accounts/bs-adp", label: "BS / ADP" },
+    ],
+  },
 ];
 
 interface AdminSidebarProps {
@@ -36,7 +77,7 @@ interface AdminSidebarProps {
 const AdminSidebar = ({ isOpen, onToggle }: AdminSidebarProps) => {
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>(
-    location.pathname.includes("/students") ? ["/admin/students"] : []
+    navItems.filter((item) => item.children && location.pathname.startsWith(item.to)).map((item) => item.to)
   );
 
   const toggleExpand = (to: string) => {

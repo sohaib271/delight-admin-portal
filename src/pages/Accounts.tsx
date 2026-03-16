@@ -1,85 +1,51 @@
-import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Pencil, Trash2 } from "lucide-react";
-import { accounts as mockAccounts, classes } from "@/data/mockData";
-import PageHeader from "@/components/PageHeader";
-import TableSkeleton from "@/components/TableSkeleton";
+import { Users, GraduationCap, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { students } from "@/data/mockData";
 
 const Accounts = () => {
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [selectedClass, setSelectedClass] = useState("5th Class");
+  const navigate = useNavigate();
+  const interCount = students.filter((s) => s.category === "intermediate").length;
+  const bsCount = students.filter((s) => s.category === "bs_adp").length;
 
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(t);
-  }, []);
-
-  const filtered = mockAccounts.filter(
-    (a) => a.name.toLowerCase().includes(search.toLowerCase())
-  );
-
-  if (loading) return <TableSkeleton rows={6} cols={7} />;
+  const cards = [
+    {
+      title: "Intermediate Accounts",
+      description: "Manage fee accounts for intermediate program students",
+      count: interCount,
+      icon: Users,
+      path: "/admin/accounts/intermediate",
+      color: "from-primary/20 to-primary/5",
+      iconBg: "bg-primary/10 text-primary",
+    },
+    {
+      title: "BS / ADP Accounts",
+      description: "Manage fee accounts for BS and ADP degree program students",
+      count: bsCount,
+      icon: GraduationCap,
+      path: "/admin/accounts/bs-adp",
+      color: "from-accent/20 to-accent/5",
+      iconBg: "bg-accent/10 text-accent-foreground",
+    },
+  ];
 
   return (
     <div>
-      <PageHeader
-        title="Accounts"
-        totalLabel="Total Students"
-        totalCount={filtered.length}
-        search={search}
-        onSearchChange={setSearch}
-        selectedClass={selectedClass}
-        onClassChange={setSelectedClass}
-        classes={classes}
-        searchPlaceholder="Search Student..."
-      />
-
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="overflow-x-auto rounded-xl border border-border bg-card shadow-card"
-      >
-        <table className="w-full min-w-[700px]">
-          <thead>
-            <tr className="border-b border-border">
-              {["S.No", "Student ID", "Student Name", "Father's Name", "Class", "DOJ", "Fee Payment", "Actions"].map((h) => (
-                <th key={h} className="table-header p-4 text-left">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((a, i) => (
-              <motion.tr
-                key={a.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.03 }}
-                className="border-b border-border last:border-0 hover:bg-secondary/50 transition-colors"
-              >
-                <td className="p-4 text-sm">{String(i + 1).padStart(2, "0")}</td>
-                <td className="p-4 text-sm font-medium">{a.studentId}</td>
-                <td className="p-4 text-sm">{a.name}</td>
-                <td className="p-4 text-sm text-muted-foreground">{a.fatherName}</td>
-                <td className="p-4 text-sm">{a.class}</td>
-                <td className="p-4 text-sm text-muted-foreground">{a.doj}</td>
-                <td className="p-4 text-sm font-semibold">{a.feePayment}</td>
-                <td className="p-4">
-                  <div className="flex gap-2">
-                    <button className="rounded-md p-1.5 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors">
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
-      </motion.div>
+      <motion.h1 initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-2 font-display text-xl font-bold text-foreground sm:text-2xl">Accounts</motion.h1>
+      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="mb-8 text-sm text-muted-foreground">Select a category to manage accounts</motion.p>
+      <div className="grid gap-6 sm:grid-cols-2">
+        {cards.map((card, i) => (
+          <motion.div key={card.title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + i * 0.1 }} onClick={() => navigate(card.path)} className={`group cursor-pointer rounded-2xl border border-border bg-gradient-to-br ${card.color} p-6 shadow-card transition-all hover:shadow-lg hover:-translate-y-1`}>
+            <div className="mb-4 flex items-center justify-between">
+              <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${card.iconBg}`}><card.icon className="h-6 w-6" /></div>
+              <span className="rounded-full bg-card px-3 py-1 text-sm font-semibold text-foreground shadow-sm">{card.count} Students</span>
+            </div>
+            <h2 className="mb-1 font-display text-lg font-bold text-foreground">{card.title}</h2>
+            <p className="mb-4 text-sm text-muted-foreground">{card.description}</p>
+            <div className="flex items-center gap-1 text-sm font-medium text-primary group-hover:gap-2 transition-all">View Accounts <ArrowRight className="h-4 w-4" /></div>
+          </motion.div>
+        ))}
+      </div>
     </div>
   );
 };
