@@ -5,13 +5,14 @@ import { motion } from "framer-motion";
 const routeTitles: Record<string, string> = {
   dashboard: "Dashboard",
   students: "Students",
-  intermediate: "Intermediate Students",
-  "bs-adp": "BS / ADP Students",
+  intermediate: "Intermediate",
+  "bs-adp": "BS / ADP",
   faculty: "Faculty",
   attendance: "Attendance",
   subjects: "Subjects",
   score: "Score",
   accounts: "Accounts",
+  classes: "Classes",
 };
 
 interface TopHeaderProps {
