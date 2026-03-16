@@ -10,10 +10,21 @@ import Students from "./pages/Students";
 import IntermediateStudents from "./pages/IntermediateStudents";
 import BsAdpStudents from "./pages/BsAdpStudents";
 import Attendance from "./pages/Attendance";
+import IntermediateAttendance from "./pages/IntermediateAttendance";
+import BsAdpAttendance from "./pages/BsAdpAttendance";
 import Subjects from "./pages/Subjects";
+import IntermediateSubjects from "./pages/IntermediateSubjects";
+import BsAdpSubjects from "./pages/BsAdpSubjects";
 import Score from "./pages/Score";
+import IntermediateScore from "./pages/IntermediateScore";
+import BsAdpScore from "./pages/BsAdpScore";
 import Accounts from "./pages/Accounts";
+import IntermediateAccounts from "./pages/IntermediateAccounts";
+import BsAdpAccounts from "./pages/BsAdpAccounts";
 import Faculty from "./pages/Faculty";
+import Classes from "./pages/Classes";
+import IntermediateClasses from "./pages/IntermediateClasses";
+import BsAdpClasses from "./pages/BsAdpClasses";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,9 +45,20 @@ const App = () => (
             <Route path="students/bs-adp" element={<BsAdpStudents />} />
             <Route path="faculty" element={<Faculty />} />
             <Route path="attendance" element={<Attendance />} />
+            <Route path="attendance/intermediate" element={<IntermediateAttendance />} />
+            <Route path="attendance/bs-adp" element={<BsAdpAttendance />} />
             <Route path="subjects" element={<Subjects />} />
+            <Route path="subjects/intermediate" element={<IntermediateSubjects />} />
+            <Route path="subjects/bs-adp" element={<BsAdpSubjects />} />
             <Route path="score" element={<Score />} />
+            <Route path="score/intermediate" element={<IntermediateScore />} />
+            <Route path="score/bs-adp" element={<BsAdpScore />} />
             <Route path="accounts" element={<Accounts />} />
+            <Route path="accounts/intermediate" element={<IntermediateAccounts />} />
+            <Route path="accounts/bs-adp" element={<BsAdpAccounts />} />
+            <Route path="classes" element={<Classes />} />
+            <Route path="classes/intermediate" element={<IntermediateClasses />} />
+            <Route path="classes/bs-adp" element={<BsAdpClasses />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

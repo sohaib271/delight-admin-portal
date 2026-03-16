@@ -1,84 +1,45 @@
-import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Pencil, Trash2 } from "lucide-react";
-import { subjects as mockSubjects, classes } from "@/data/mockData";
-import PageHeader from "@/components/PageHeader";
-import TableSkeleton from "@/components/TableSkeleton";
+import { Users, GraduationCap, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Subjects = () => {
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [selectedClass, setSelectedClass] = useState("5th Class");
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(t);
-  }, []);
-
-  const filtered = mockSubjects.filter(
-    (s) => s.subject.toLowerCase().includes(search.toLowerCase())
-  );
-
-  if (loading) return <TableSkeleton rows={6} cols={5} />;
+  const cards = [
+    {
+      title: "Intermediate Subjects",
+      description: "Manage subjects for intermediate program",
+      icon: Users,
+      path: "/admin/subjects/intermediate",
+      color: "from-primary/20 to-primary/5",
+      iconBg: "bg-primary/10 text-primary",
+    },
+    {
+      title: "BS / ADP Subjects",
+      description: "Manage subjects for BS and ADP degree programs",
+      icon: GraduationCap,
+      path: "/admin/subjects/bs-adp",
+      color: "from-accent/20 to-accent/5",
+      iconBg: "bg-accent/10 text-accent-foreground",
+    },
+  ];
 
   return (
     <div>
-      <PageHeader
-        title="Subjects"
-        totalLabel="Total Subjects"
-        totalCount={filtered.length}
-        search={search}
-        onSearchChange={setSearch}
-        selectedClass={selectedClass}
-        onClassChange={setSelectedClass}
-        classes={classes}
-        searchPlaceholder="Search Subject..."
-        onAdd={() => {}}
-        addLabel="Add Subject"
-      />
-
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="overflow-x-auto rounded-xl border border-border bg-card shadow-card"
-      >
-        <table className="w-full min-w-[500px]">
-          <thead>
-            <tr className="border-b border-border">
-              {["S.No", "Subject", "Total Marks", "Passing Marks", "Actions"].map((h) => (
-                <th key={h} className="table-header p-4 text-left">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((s, i) => (
-              <motion.tr
-                key={s.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.03 }}
-                className="border-b border-border last:border-0 hover:bg-secondary/50 transition-colors"
-              >
-                <td className="p-4 text-sm">{String(s.sno).padStart(2, "0")}</td>
-                <td className="p-4 text-sm font-medium">{s.subject}</td>
-                <td className="p-4 text-sm">{s.totalMarks}</td>
-                <td className="p-4 text-sm">{s.passingMarks}</td>
-                <td className="p-4">
-                  <div className="flex gap-2">
-                    <button className="rounded-md p-1.5 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors">
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
-      </motion.div>
+      <motion.h1 initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-2 font-display text-xl font-bold text-foreground sm:text-2xl">Subjects</motion.h1>
+      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="mb-8 text-sm text-muted-foreground">Select a category to manage subjects</motion.p>
+      <div className="grid gap-6 sm:grid-cols-2">
+        {cards.map((card, i) => (
+          <motion.div key={card.title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + i * 0.1 }} onClick={() => navigate(card.path)} className={`group cursor-pointer rounded-2xl border border-border bg-gradient-to-br ${card.color} p-6 shadow-card transition-all hover:shadow-lg hover:-translate-y-1`}>
+            <div className="mb-4 flex items-center justify-between">
+              <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${card.iconBg}`}><card.icon className="h-6 w-6" /></div>
+            </div>
+            <h2 className="mb-1 font-display text-lg font-bold text-foreground">{card.title}</h2>
+            <p className="mb-4 text-sm text-muted-foreground">{card.description}</p>
+            <div className="flex items-center gap-1 text-sm font-medium text-primary group-hover:gap-2 transition-all">View Subjects <ArrowRight className="h-4 w-4" /></div>
+          </motion.div>
+        ))}
+      </div>
     </div>
   );
 };
