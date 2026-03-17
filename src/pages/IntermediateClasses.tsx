@@ -105,6 +105,7 @@ const IntermediateClasses = () => {
     setFormSelectedTeachers([]);
     setFormSelectedStudents([]);
     setFormStudentSearch("");
+    setFormExpandedTeacher(null);
     setShowAddForm(false);
   };
 
