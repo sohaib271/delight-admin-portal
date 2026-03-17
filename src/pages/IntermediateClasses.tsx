@@ -3,6 +3,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronLeft, Users, Clock, BookOpen, Plus, Search, Check, X, UserCircle } from "lucide-react";
 import { professors, students } from "@/data/mockData";
 
+const teacherSubjects: Record<string, string[]> = {
+  p1: ["Physics", "Applied Physics", "Mechanics"],
+  p2: ["Mathematics", "Statistics", "Calculus"],
+  p3: ["Physics", "Thermodynamics", "Optics"],
+  p4: ["English", "Literature", "Grammar"],
+  p5: ["Chemistry", "Organic Chemistry", "Biochemistry"],
+};
+
 const intermediateClassData = [
   {
     name: "1st Year",
