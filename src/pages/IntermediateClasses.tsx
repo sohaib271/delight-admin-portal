@@ -79,7 +79,8 @@ const IntermediateClasses = () => {
   const [formClassName, setFormClassName] = useState("");
   const [formPart, setFormPart] = useState("");
   const [formTeacherDropdown, setFormTeacherDropdown] = useState(false);
-  const [formSelectedTeachers, setFormSelectedTeachers] = useState<string[]>([]);
+  const [formExpandedTeacher, setFormExpandedTeacher] = useState<string | null>(null);
+  const [formSelectedTeachers, setFormSelectedTeachers] = useState<{ teacherId: string; subject: string }[]>([]);
   const [formStudentSearch, setFormStudentSearch] = useState("");
   const [formSelectedStudents, setFormSelectedStudents] = useState<string[]>([]);
 
