@@ -3,6 +3,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronLeft, Users, Clock, BookOpen, Plus, Search, Check, X, UserCircle } from "lucide-react";
 import { professors, students } from "@/data/mockData";
 
+const teacherSubjects: Record<string, string[]> = {
+  p1: ["Physics", "Applied Physics", "Mechanics"],
+  p2: ["Mathematics", "Statistics", "Calculus"],
+  p3: ["Physics", "Thermodynamics", "Optics"],
+  p4: ["English", "Literature", "Grammar"],
+  p5: ["Chemistry", "Organic Chemistry", "Biochemistry"],
+};
+
 const intermediateClassData = [
   {
     name: "1st Year",
@@ -71,7 +79,8 @@ const IntermediateClasses = () => {
   const [formClassName, setFormClassName] = useState("");
   const [formPart, setFormPart] = useState("");
   const [formTeacherDropdown, setFormTeacherDropdown] = useState(false);
-  const [formSelectedTeachers, setFormSelectedTeachers] = useState<string[]>([]);
+  const [formExpandedTeacher, setFormExpandedTeacher] = useState<string | null>(null);
+  const [formSelectedTeachers, setFormSelectedTeachers] = useState<{ teacherId: string; subject: string }[]>([]);
   const [formStudentSearch, setFormStudentSearch] = useState("");
   const [formSelectedStudents, setFormSelectedStudents] = useState<string[]>([]);
 
@@ -96,6 +105,7 @@ const IntermediateClasses = () => {
     setFormSelectedTeachers([]);
     setFormSelectedStudents([]);
     setFormStudentSearch("");
+    setFormExpandedTeacher(null);
     setShowAddForm(false);
   };
 
@@ -327,31 +337,71 @@ const IntermediateClasses = () => {
                 <div className="relative">
                   <label className="mb-1 block text-sm font-medium text-foreground">Assign Teachers</label>
                   <button onClick={() => setFormTeacherDropdown(!formTeacherDropdown)} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-left text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
-                    {formSelectedTeachers.length > 0 ? `${formSelectedTeachers.length} teacher(s) selected` : "Select teachers"}
+                    {formSelectedTeachers.length > 0
+                      ? formSelectedTeachers.map((t) => {
+                          const prof = professors.find((p) => p.id === t.teacherId);
+                          return `${prof?.firstName} ${prof?.lastName} (${t.subject})`;
+                        }).join(", ")
+                      : "Select teachers"}
                   </button>
                   <AnimatePresence>
                     {formTeacherDropdown && (
-                      <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-card shadow-elevated max-h-48 overflow-y-auto">
-                        {professors.map((p) => (
-                          <button
-                            key={p.id}
-                            onClick={() => {
-                              setFormSelectedTeachers((prev) =>
-                                prev.includes(p.id) ? prev.filter((id) => id !== p.id) : [...prev, p.id]
-                              );
-                            }}
-                            className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-secondary/50 transition-colors"
-                          >
-                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                              <UserCircle className="h-5 w-5 text-primary" />
+                      <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-card shadow-elevated max-h-60 overflow-y-auto">
+                        {professors.map((p) => {
+                          const isSelected = formSelectedTeachers.some((t) => t.teacherId === p.id);
+                          const selectedSubject = formSelectedTeachers.find((t) => t.teacherId === p.id)?.subject;
+                          const subjects = teacherSubjects[p.id] || [];
+                          const isExpanded = formExpandedTeacher === p.id;
+
+                          return (
+                            <div key={p.id} className="border-b border-border last:border-0">
+                              <button
+                                onClick={() => {
+                                  if (isSelected) {
+                                    setFormSelectedTeachers((prev) => prev.filter((t) => t.teacherId !== p.id));
+                                    setFormExpandedTeacher(null);
+                                  } else {
+                                    setFormExpandedTeacher(isExpanded ? null : p.id);
+                                  }
+                                }}
+                                className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-secondary/50 transition-colors"
+                              >
+                                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                  <UserCircle className="h-5 w-5 text-primary" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-foreground truncate">{p.firstName} {p.lastName}</p>
+                                  <p className="text-xs text-muted-foreground">{p.department}</p>
+                                </div>
+                                {isSelected && (
+                                  <span className="text-xs font-medium text-primary flex items-center gap-1">
+                                    <Check className="h-3.5 w-3.5" /> {selectedSubject}
+                                  </span>
+                                )}
+                                {!isSelected && <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />}
+                              </button>
+                              <AnimatePresence>
+                                {isExpanded && !isSelected && (
+                                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden bg-secondary/30">
+                                    {subjects.map((subj) => (
+                                      <button
+                                        key={subj}
+                                        onClick={() => {
+                                          setFormSelectedTeachers((prev) => [...prev, { teacherId: p.id, subject: subj }]);
+                                          setFormExpandedTeacher(null);
+                                        }}
+                                        className="flex w-full items-center gap-2 px-6 py-2 text-left text-sm text-foreground hover:bg-secondary transition-colors"
+                                      >
+                                        <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                                        {subj}
+                                      </button>
+                                    ))}
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-foreground truncate">{p.firstName} {p.lastName}</p>
-                              <p className="text-xs text-muted-foreground">{p.department}</p>
-                            </div>
-                            {formSelectedTeachers.includes(p.id) && <Check className="h-4 w-4 text-primary flex-shrink-0" />}
-                          </button>
-                        ))}
+                          );
+                        })}
                       </motion.div>
                     )}
                   </AnimatePresence>
