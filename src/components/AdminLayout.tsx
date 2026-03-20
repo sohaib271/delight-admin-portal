@@ -2,10 +2,8 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import AdminSidebar from "./AdminSidebar";
 import TopHeader from "./TopHeader";
-
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
   return (
     <div className="flex min-h-screen bg-background">
       <AdminSidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
