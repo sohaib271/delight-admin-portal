@@ -31,7 +31,6 @@ const Login = () => {
 
   try {
     const res = await AuthService.adminLogin({ email, password });
-
     if (res?.error) {
       toast.error(res?.message);
       setLoading(false);
