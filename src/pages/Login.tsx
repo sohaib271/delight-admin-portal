@@ -5,9 +5,14 @@ import { Lock, Mail, Eye, EyeOff, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import LoadingScreen from "@/components/LoadingScreen";
+import AuthService from "@/services/authService";
+import { useDispatch } from "react-redux";
+import { setUser } from "@/store/userSlice";
+import { toast } from "sonner";
 
 const Login = () => {
   const navigate = useNavigate();
+  const dispatch=useDispatch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -15,17 +20,41 @@ const Login = () => {
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
-      setError("Please fill in all fields");
+  e.preventDefault();
+
+  if (!email || !password) {
+    setError("Please fill in all fields");
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const res = await AuthService.adminLogin({ email, password });
+
+    if (res?.error) {
+      toast.error(res?.message);
+      setLoading(false);
       return;
     }
+
+    // ✅ Store token
+    localStorage.setItem("token", res?.access_token);
+
+    // ❌ REMOVE THIS (important)
+    dispatch(setUser(res?.user));
+
     setError("");
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setLoading(false);
+
+    // ✅ Let React Query fetch /me instead
     navigate("/admin/dashboard");
-  };
+
+  } catch (err) {
+    setError("Something went wrong");
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (loading) return <LoadingScreen />;
 

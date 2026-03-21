@@ -23,14 +23,19 @@ import IntermediateAccounts from "./pages/IntermediateAccounts";
 import BsAdpAccounts from "./pages/BsAdpAccounts";
 import Faculty from "./pages/Faculty";
 import Classes from "./pages/Classes";
+import {Provider} from "react-redux"
 import IntermediateClasses from "./pages/IntermediateClasses";
 import BsAdpClasses from "./pages/BsAdpClasses";
 import NotFound from "./pages/NotFound";
+import { store } from "./store/store";
+import AuthProvider from "./provider/AuthProvider";
 
 const queryClient = new QueryClient();
 
 const App = () => (
+  <Provider store={store}>
   <QueryClientProvider client={queryClient}>
+    <AuthProvider>
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -64,7 +69,9 @@ const App = () => (
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
+  </Provider>
 );
 
 export default App;

@@ -1,155 +1,365 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Pencil, Trash2, X, Eye, ArrowRight } from "lucide-react";
-import { students as mockStudents, bsAdpClasses } from "@/data/mockData";
 import TableSkeleton from "@/components/TableSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus } from "lucide-react";
+import { useUsers } from "@/hooks/useUsers";
+import { useDepartments } from "@/hooks/useDepartments";
+import UserService from "@/services/userService";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const PREVIEW_COUNT = 5;
 
+const SEMESTERS = [
+  { label: "1st", value: "I" },
+  { label: "2nd", value: "II" },
+  { label: "3rd", value: "III" },
+  { label: "4th", value: "IV" },
+  { label: "5th", value: "V" },
+  { label: "6th", value: "VI" },
+  { label: "7th", value: "VII" },
+  { label: "8th", value: "VIII" },
+];
+
+const selectClass = cn(
+  "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+);
+
+const Field = ({ label, children, col2 = false }: { label: string; children: React.ReactNode; col2?: boolean }) => (
+  <div className={col2 ? "sm:col-span-2" : ""}>
+    <label className="mb-1 block text-xs font-medium text-muted-foreground">{label}</label>
+    {children}
+  </div>
+);
+
+const defaultForm = {
+  name: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  password: "",
+  gender: "M",
+  address: "",
+  cnic: "",
+  department: "",
+  city: "",
+  session: "",
+  category: "bs",   // ✅ "bs" or "adp" — stored directly in DB
+  semester: "I",    // ✅ "I" to "VIII" — stored in DB as class field
+  subjects: "",
+  matricMarks: "",
+  whatsappNumber: "",
+  doj: "",
+};
+
 const BsAdpStudents = () => {
-  const [loading, setLoading] = useState(true);
+  const { data: departments } = useDepartments();
+  const { data: users, isLoading } = useUsers("student");
+
+  // ✅ Departments that serve BS/ADP students
+  const bsAdpDepts = useMemo(() =>
+    (departments || []).filter((d: any) =>
+      d?.category === "bs_adp" || d?.category === "bs" || d?.category === "adp"
+    ),
+    [departments]
+  );
+
+  // ✅ category is "bs" or "adp" in DB
+  const bsAdpUsers = useMemo(() =>
+    (users || []).filter((u: any) => u?.category === "bs" || u?.category === "adp"),
+    [users]
+  );
   const [search, setSearch] = useState("");
-  const [selectedClass, setSelectedClass] = useState(bsAdpClasses[0]);
+  const [selectedProgram, setSelectedProgram] = useState<"bs" | "adp">("bs");
   const [showModal, setShowModal] = useState(false);
   const [showAll, setShowAll] = useState(false);
-  const [students, setStudents] = useState(mockStudents.filter((s) => s.category === "bs_adp"));
-  const [detailStudent, setDetailStudent] = useState<(typeof students)[0] | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [localStudents, setLocalStudents] = useState<any[]>([]);
+  const [detailStudent, setDetailStudent] = useState<any | null>(null);
+  const [form, setForm] = useState(defaultForm);
 
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 600);
-    return () => clearTimeout(t);
-  }, []);
+  const set = (key: string) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+      setForm((f) => ({ ...f, [key]: e.target.value }));
 
-  const filtered = students.filter(
+  const allStudents = useMemo(() => [...bsAdpUsers, ...localStudents], [bsAdpUsers, localStudents]);
+
+  // ✅ Filter by category field which holds "bs" or "adp"
+  const filtered = allStudents.filter(
     (s) =>
-      (s.name.toLowerCase().includes(search.toLowerCase()) || s.studentId.toLowerCase().includes(search.toLowerCase())) &&
-      s.class === selectedClass
+      (s?.name?.toLowerCase().includes(search.toLowerCase()) ||
+        s?.specialId?.toLowerCase().includes(search.toLowerCase())) &&
+      s?.category === selectedProgram
   );
 
   const displayed = showAll ? filtered : filtered.slice(0, PREVIEW_COUNT);
 
-  const handleDelete = (id: string) => {
-    setStudents((prev) => prev.filter((s) => s.id !== id));
+  // ✅ Semesters available: ADP = 4, BS = 8
+  const availableSemesters = form.category === "adp" ? SEMESTERS.slice(0, 4) : SEMESTERS;
+
+  const handleDelete = (id: string) =>
+    setLocalStudents((prev) => prev.filter((s) => s._id !== id));
+
+  const validateForm = (): boolean => {
+    if (!form.name.trim() || !form.lastName.trim()) {
+      toast.error("First name and last name are required"); return false;
+    }
+    if (form.name.trim().length > 30) {
+      toast.error("First name must not exceed 30 characters"); return false;
+    }
+    if (form.lastName.trim().length > 30) {
+      toast.error("Last name must not exceed 30 characters"); return false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      toast.error("Invalid email format"); return false;
+    }
+    if (!form.password.trim()) {
+      toast.error("Password is required"); return false;
+    }
+    if (!/^\d{13}$/.test(form.cnic)) {
+      toast.error("CNIC must be exactly 13 digits, no dashes"); return false;
+    }
+    if (!/^(92\d{10}|0\d{10})$/.test(form.phone)) {
+      toast.error("Phone: 12 digits starting with 92, or 11 digits starting with 0"); return false;
+    }
+    if (!form.address.trim()) {
+      toast.error("Address is required"); return false;
+    }
+    if (!form.city.trim()) {
+      toast.error("City is required"); return false;
+    }
+    if (!form.department) {
+      toast.error("Department is required"); return false;
+    }
+    if (!form.session.trim()) {
+      toast.error("Session is required"); return false;
+    }
+    if (!form.semester) {
+      toast.error("Semester is required"); return false;
+    }
+    if (!form.matricMarks || isNaN(Number(form.matricMarks))) {
+      toast.error("Valid matric marks are required"); return false;
+    }
+    if (Number(form.matricMarks) < 0 || Number(form.matricMarks) > 1100) {
+      toast.error("Matric marks must be between 0 and 1100"); return false;
+    }
+    if (form.whatsappNumber && !/^(92\d{10}|0\d{10})$/.test(form.whatsappNumber)) {
+      toast.error("WhatsApp number format is invalid"); return false;
+    }
+    return true;
   };
 
-  const handleAddStudent = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    const newStudent = {
-      id: crypto.randomUUID(),
-      studentId: form.get("studentId") as string,
-      name: form.get("name") as string,
-      fatherName: form.get("fatherName") as string,
-      class: (form.get("class") as string) || selectedClass,
-      doj: new Date().toLocaleDateString("en-GB"),
-      feePayment: "0/-",
-      phone: form.get("phone") as string,
-      address: form.get("address") as string,
-      total: "0%",
-      category: "bs_adp" as const,
+  const handleAddStudent = async () => {
+    if (!validateForm()) return;
+    setSaving(true);
+
+    const payload = {
+      name: form.name,
+      lastName: form.lastName,
+      email: form.email,
+      phone: form.phone,
+      password: form.password,
+      gender: form.gender,
+      address: form.address,
+      category: form.category,   // ✅ "bs" or "adp" → stored in DB category field
+      cnic: form.cnic,
+      city: form.city,
+      class: form.semester,      // ✅ "I" to "VIII" → stored in DB class field
+      department: form.department,
+      session: form.session,
+      matricMarks: Number(form.matricMarks),
+      subjects: form.subjects.split(",").map((s) => s.trim()).filter(Boolean),
+      ...(form.whatsappNumber && { whatsappNumber: form.whatsappNumber }),
+      doj: form.doj,
     };
-    setStudents((prev) => [...prev, newStudent]);
-    setShowModal(false);
+
+    try {
+      const res = await UserService.addStudent(payload);
+
+      if (res?.error || res?.statusCode >= 400) {
+        if (Array.isArray(res?.errors)) {
+          res.errors.forEach((e: string) => toast.error(e));
+        } else {
+          toast.error(res?.message ?? "Something went wrong");
+        }
+        return;
+      }
+
+      toast.success(res?.message ?? "Student added successfully");
+      setLocalStudents((prev) => [...prev, res?.user]);
+      setShowModal(false);
+      setForm({ ...defaultForm, category: selectedProgram });
+
+    } catch (err: any) {
+      console.error("Add student error:", err);
+      const data = err?.response?.data;
+      if (Array.isArray(data?.errors)) {
+        data.errors.forEach((m: string) => toast.error(m));
+      } else if (Array.isArray(data?.message)) {
+        data.message.forEach((m: string) => toast.error(m));
+      } else {
+        toast.error(data?.message ?? "Network error, please try again");
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
-  if (loading) return <TableSkeleton rows={5} cols={7} />;
+  if (isLoading) return <TableSkeleton rows={5} cols={7} />;
 
   return (
     <div>
-      <motion.h1 initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4 font-display text-xl font-bold text-foreground sm:text-2xl">
+      <motion.h1
+        initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+        className="mb-4 font-display text-xl font-bold text-foreground sm:text-2xl">
         BS / ADP Students
       </motion.h1>
 
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-4 flex flex-wrap items-center gap-3">
-        <span className="font-display text-sm font-semibold text-foreground">Total: {filtered.length}</span>
-        <select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)} className="rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring">
-          {bsAdpClasses.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+        className="mb-4 flex flex-wrap items-center gap-3">
+        <span className="font-display text-sm font-semibold text-foreground">
+          Total: {filtered.length}
+        </span>
+
+        {/* ✅ Filter by "bs" or "adp" */}
+        <select
+          value={selectedProgram}
+          onChange={(e) => setSelectedProgram(e.target.value as "bs" | "adp")}
+          className="rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring">
+          <option value="bs">BS</option>
+          <option value="adp">ADP</option>
         </select>
+
         <div className="relative flex-1 min-w-[180px] max-w-xs">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search Student..." className="pl-9" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search Student..."
+            className="pl-9"
+          />
         </div>
-        <Button onClick={() => setShowModal(true)} className="ml-auto">
+
+        <Button
+          onClick={() => { setForm({ ...defaultForm, category: selectedProgram }); setShowModal(true); }}
+          className="ml-auto">
           <Plus className="mr-1 h-4 w-4" /> Add More
         </Button>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="overflow-x-auto rounded-xl border border-border bg-card shadow-card">
-        <table className="w-full min-w-[700px]">
+      {/* Table */}
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
+        className="overflow-x-auto rounded-xl border border-border bg-card shadow-card">
+        <table className="w-full min-w-[750px]">
           <thead>
             <tr className="border-b border-border">
-              {["S.No", "Student ID", "Student Name", "Father's Name", "Program", "DOJ", "Actions"].map((h) => (
-                <th key={h} className="table-header p-4 text-left">{h}</th>
+              {["S.No", "Student ID", "Name", "Last Name", "Program", "Semester", "DOJ", "Actions"].map((h) => (
+                <th key={h} className="table-header p-4 text-left text-sm font-medium text-muted-foreground">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {displayed.map((s, i) => (
-              <motion.tr key={s.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="border-b border-border last:border-0 hover:bg-secondary/50 transition-colors">
+            {displayed?.map((s, i) => (
+              <motion.tr
+                key={s?._id}
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.03 }}
+                className="border-b border-border last:border-0 hover:bg-secondary/50 transition-colors">
                 <td className="p-4 text-sm">{String(i + 1).padStart(2, "0")}</td>
-                <td className="p-4 text-sm font-medium">{s.studentId}</td>
-                <td className="p-4 text-sm">{s.name}</td>
-                <td className="p-4 text-sm text-muted-foreground">{s.fatherName}</td>
-                <td className="p-4 text-sm">{s.class}</td>
-                <td className="p-4 text-sm text-muted-foreground">{s.doj}</td>
+                <td className="p-4 text-sm font-medium">{s?.specialId}</td>
+                <td className="p-4 text-sm">{s?.name}</td>
+                <td className="p-4 text-sm text-muted-foreground">{s?.lastName}</td>
+                {/* ✅ category holds "bs" or "adp" */}
+                <td className="p-4 text-sm uppercase">{s?.category ?? "—"}</td>
+                {/* ✅ class holds "I"-"VIII", look up label for display */}
+                <td className="p-4 text-sm">
+                  {SEMESTERS.find((sem) => sem.value === s?.class)?.label ?? s?.class ?? "—"} Sem
+                </td>
+                <td className="p-4 text-sm text-muted-foreground">{s?.doj}</td>
                 <td className="p-4">
                   <div className="flex gap-2">
-                    <button onClick={() => setDetailStudent(s)} className="rounded-md p-1.5 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors">
+                    <button
+                      onClick={() => setDetailStudent(s)}
+                      className="rounded-md p-1.5 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors">
                       <Eye className="h-4 w-4" />
                     </button>
                     <button className="rounded-md p-1.5 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors">
                       <Pencil className="h-4 w-4" />
                     </button>
-                    <button onClick={() => handleDelete(s.id)} className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors">
+                    <button
+                      onClick={() => handleDelete(s?._id)}
+                      className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </td>
               </motion.tr>
             ))}
-            {displayed.length === 0 && (
-              <tr><td colSpan={7} className="p-8 text-center text-sm text-muted-foreground">No students found</td></tr>
+            {displayed?.length === 0 && (
+              <tr>
+                <td colSpan={8} className="p-8 text-center text-sm text-muted-foreground">
+                  No students found
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
       </motion.div>
 
-      {filtered.length > PREVIEW_COUNT && (
+      {filtered?.length > PREVIEW_COUNT && (
         <div className="mt-4 flex justify-center">
           <Button variant="outline" onClick={() => setShowAll(!showAll)}>
-            {showAll ? "Show Less" : `View All (${filtered.length})`} <ArrowRight className="ml-1 h-4 w-4" />
+            {showAll ? "Show Less" : `View All (${filtered?.length})`}
+            <ArrowRight className="ml-1 h-4 w-4" />
           </Button>
         </div>
       )}
 
-      {/* View Details Modal */}
+      {/* Detail Modal */}
       <AnimatePresence>
         {detailStudent && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4" onClick={() => setDetailStudent(null)}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={(e) => e.stopPropagation()} className="w-full max-w-md rounded-2xl bg-card p-6 shadow-modal">
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4"
+            onClick={() => setDetailStudent(null)}>
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }} onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md rounded-2xl bg-card p-6 shadow-modal max-h-[90vh] overflow-y-auto">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="font-display text-lg font-bold text-foreground">Student Details</h2>
-                <button onClick={() => setDetailStudent(null)} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
+                <button onClick={() => setDetailStudent(null)} className="text-muted-foreground hover:text-foreground">
+                  <X className="h-5 w-5" />
+                </button>
               </div>
               <div className="space-y-3 text-sm">
-                {[
-                  ["Student ID", detailStudent.studentId],
-                  ["Name", detailStudent.name],
-                  ["Father's Name", detailStudent.fatherName],
-                  ["Program", detailStudent.class],
-                  ["Date of Joining", detailStudent.doj],
-                  ["Phone", detailStudent.phone],
-                  ["Address", detailStudent.address],
-                  ["Fee Payment", detailStudent.feePayment],
-                ].map(([label, value]) => (
+                {([
+                  ["Student ID",      detailStudent?.specialId],
+                  ["First Name",      detailStudent?.name],
+                  ["Last Name",       detailStudent?.lastName],
+                  ["Email",           detailStudent?.email],
+                  ["Phone",           detailStudent?.phone],
+                  ["CNIC",            detailStudent?.cnic],
+                  ["Gender",          detailStudent?.gender === "M" ? "Male" : "Female"],
+                  // ✅ category = "bs"/"adp", class = "I"-"VIII"
+                  ["Program",         detailStudent?.category?.toUpperCase() ?? "—"],
+                  ["Semester",        (SEMESTERS.find((s) => s.value === detailStudent?.class)?.label ?? detailStudent?.class ?? "—") + " Semester"],
+                  ["Session",         detailStudent?.session],
+                  ["City",            detailStudent?.city],
+                  ["Address",         detailStudent?.address],
+                  ["Date of Joining", detailStudent?.doj],
+                  ["Matric Marks",    String(detailStudent?.matricMarks ?? "—")],
+                  ["Subjects",        detailStudent?.subjects?.join(", ") || "—"],
+                ] as [string, string][]).map(([label, value]) => (
                   <div key={label} className="flex justify-between border-b border-border pb-2 last:border-0">
                     <span className="font-medium text-muted-foreground">{label}</span>
-                    <span className="text-foreground">{value}</span>
+                    <span className="text-foreground text-right">{value ?? "—"}</span>
                   </div>
                 ))}
               </div>
@@ -161,46 +371,120 @@ const BsAdpStudents = () => {
       {/* Add Student Modal */}
       <AnimatePresence>
         {showModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4" onClick={() => setShowModal(false)}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={(e) => e.stopPropagation()} className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-modal">
-              <div className="mb-6 flex items-center justify-between">
-                <h2 className="font-display text-xl font-bold text-foreground">Add BS/ADP Student</h2>
-                <button onClick={() => setShowModal(false)} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4"
+            onClick={() => setShowModal(false)}>
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }} onClick={(e) => e.stopPropagation()}
+              className="flex flex-col w-full max-w-lg rounded-2xl bg-card shadow-modal max-h-[90vh]">
+
+              <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-border shrink-0">
+                <h2 className="font-display text-xl font-bold text-foreground">Add BS / ADP Student</h2>
+                <button onClick={() => setShowModal(false)} className="text-muted-foreground hover:text-foreground">
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              <form onSubmit={handleAddStudent}>
+
+              <div className="overflow-y-auto flex-1 px-6 py-4">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Student ID</label>
-                    <Input name="studentId" defaultValue={`BS-${String(students.length + 1).padStart(3, "0")}`} required />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Student Name</label>
-                    <Input name="name" placeholder="Enter name" required />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Father's Name</label>
-                    <Input name="fatherName" placeholder="Enter father's name" required />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Phone Number</label>
-                    <Input name="phone" placeholder="+91 XXXXX XXXXX" />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Program</label>
-                    <select name="class" defaultValue={selectedClass} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring">
-                      {bsAdpClasses.map((c) => <option key={c} value={c}>{c}</option>)}
+
+                  <Field label="First Name">
+                    <Input value={form.name} onChange={set("name")} placeholder="Ali" />
+                  </Field>
+                  <Field label="Last Name">
+                    <Input value={form.lastName} onChange={set("lastName")} placeholder="Khan" />
+                  </Field>
+                  <Field label="Email">
+                    <Input type="email" value={form.email} onChange={set("email")} placeholder="student@email.com" />
+                  </Field>
+                  <Field label="Password">
+                    <Input type="password" value={form.password} onChange={set("password")} />
+                  </Field>
+                  <Field label="CNIC (13 digits, no dashes)">
+                    <Input value={form.cnic} onChange={set("cnic")} placeholder="3520012345678" maxLength={13} />
+                  </Field>
+                  <Field label="Phone">
+                    <Input value={form.phone} onChange={set("phone")} placeholder="03xxxxxxxxx or 92xxxxxxxxxx" />
+                  </Field>
+                  <Field label="Gender">
+                    <select className={selectClass} value={form.gender} onChange={set("gender")}>
+                      <option value="M">Male</option>
+                      <option value="F">Female</option>
                     </select>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Address</label>
-                    <textarea name="address" placeholder="Enter address" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring min-h-[80px]" />
-                  </div>
+                  </Field>
+                  <Field label="Date of Joining">
+                    <Input type="date" value={form.doj} onChange={set("doj")} />
+                  </Field>
+                  <Field label="City">
+                    <Input value={form.city} onChange={set("city")} placeholder="Lahore" />
+                  </Field>
+
+                  {/* ✅ Program sets category — resets semester if switching to ADP with >4th selected */}
+                  <Field label="Program">
+                    <select
+                      className={selectClass}
+                      value={form.category}
+                      onChange={(e) => {
+                        const newCategory = e.target.value;
+                        const adpValues = SEMESTERS.slice(0, 4).map((s) => s.value);
+                        setForm((f) => ({
+                          ...f,
+                          category: newCategory,
+                          semester: newCategory === "adp" && !adpValues.includes(f.semester) ? "I" : f.semester,
+                        }));
+                      }}>
+                      <option value="bs">BS</option>
+                      <option value="adp">ADP</option>
+                    </select>
+                  </Field>
+
+                  {/* ✅ ADP = 4 semesters, BS = 8 semesters */}
+                  <Field label="Semester">
+                    <select className={selectClass} value={form.semester} onChange={set("semester")}>
+                      {availableSemesters.map((s) => (
+                        <option key={s.value} value={s.value}>{s.label} Semester</option>
+                      ))}
+                    </select>
+                  </Field>
+
+                  <Field label="Session (e.g. 2022-2026)">
+                    <Input value={form.session} onChange={set("session")} placeholder="2022-2026" />
+                  </Field>
+                  <Field label="Address" col2>
+                    <textarea
+                      value={form.address} onChange={set("address")}
+                      placeholder="Town, Street/Block, House No"
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring min-h-[72px] resize-none" />
+                  </Field>
+                  <Field label="Department">
+                    <select className={selectClass} value={form.department} onChange={set("department")}>
+                      <option value="">Select department</option>
+                      {bsAdpDepts?.map((d: any) => (
+                        <option key={d?._id} value={d?._id}>{d?.code}</option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Matric Marks (out of 1100)">
+                    <Input type="number" min={0} max={1100} value={form.matricMarks} onChange={set("matricMarks")} placeholder="850" />
+                  </Field>
+                  <Field label="Subjects (comma separated, optional)" col2>
+                    <Input value={form.subjects} onChange={set("subjects")} placeholder="OOP, Data Structures, DBMS" />
+                  </Field>
+                  <Field label="WhatsApp Number (optional)" col2>
+                    <Input value={form.whatsappNumber} onChange={set("whatsappNumber")} placeholder="03xxxxxxxxx or 92xxxxxxxxxx" />
+                  </Field>
+
                 </div>
-                <div className="mt-6 flex justify-end gap-3">
-                  <Button type="button" variant="outline" onClick={() => setShowModal(false)}>Cancel</Button>
-                  <Button type="submit">Save Student</Button>
-                </div>
-              </form>
+              </div>
+
+              <div className="flex justify-end gap-3 px-6 py-4 border-t border-border shrink-0">
+                <Button variant="outline" onClick={() => setShowModal(false)} disabled={saving}>Cancel</Button>
+                <Button onClick={handleAddStudent} disabled={saving}>
+                  {saving ? "Saving..." : "Save Student"}
+                </Button>
+              </div>
             </motion.div>
           </motion.div>
         )}
