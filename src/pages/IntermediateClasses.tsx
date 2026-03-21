@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown,
@@ -170,8 +170,19 @@ interface AssignedTeacher {
 // ─── component ────────────────────────────────────────────────────────────────
 const IntermediateClasses = () => {
   const { data: departments } = useDepartments();
-  const { data: profUsers } = useUsers("proff");
-  const { data: studentUsers } = useUsers("student");
+  const { data } = useUsers("");
+  const { profUsers, interStudents } = useMemo(() => {
+  if (!data) return { profUsers: [], interStudents: [] };
+
+  const profUsers = data?.filter(user => user.role === "proff");
+
+  const interStudents = data?.filter(
+    user => user.role === "student" && user.category === "intermediate"
+  );
+
+  return { profUsers, interStudents };
+}, [data]);
+
   // ── navigation state
   const [expanded, setExpanded] = useState<string | null>(null);
   const [view, setView] = useState<View>("list");
@@ -224,10 +235,6 @@ const IntermediateClasses = () => {
     (d: any) => d?.category === "intermediate",
   );
   const professors = profUsers || [];
-  const interStudents = (studentUsers || [])?.filter(
-    (s: any) => s?.category === "intermediate",
-  );
-
 
   const filteredStudents = interStudents.filter(
     (s: any) =>
