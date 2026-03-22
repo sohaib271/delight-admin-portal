@@ -324,7 +324,6 @@ if (!/^[A-Za-z]{2}\d{1}$/.test(form.section.trim())) {
     };
 
     setClassName(payload.className)
-    console.log(payload);
     try {
       const res = await ClassService.createClass(payload);
 

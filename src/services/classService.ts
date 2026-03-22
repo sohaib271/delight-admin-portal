@@ -7,5 +7,10 @@ class ClassService{
 
         return await res.json(); 
     }
+
+    static async getClasses(category){
+        const res=await fetch(`${API}/class/all?category=${category}`,{method:"GET",headers:{"Content-Type":"application/json","Authorization":`Bearer ${token}`}});
+        return await res.json();
+    }
 }
 export default ClassService;
