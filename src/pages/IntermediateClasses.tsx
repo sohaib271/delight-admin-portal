@@ -162,15 +162,18 @@ type View = "list" | "dates" | "lectures" | "lectureDetail";
 interface AssignedTeacher {
   teacherId: string;
   subject: string;
-  days: string[]; // ✅ array, was "day: string"
-  startTime: string;
-  endTime: string;
+  schedule: { day: string; startTime: string; endTime: string }[];
 }
 
 // ─── component ────────────────────────────────────────────────────────────────
 const IntermediateClasses = () => {
   const { data: departments } = useDepartments();
   const { data } = useUsers("");
+
+  function getDeptCode(id){
+    const dept=departments.find((d)=>d._id===id);
+    return dept?.code;
+  }
   const { profUsers, interStudents } = useMemo(() => {
   if (!data) return { profUsers: [], interStudents: [] };
 
@@ -199,15 +202,16 @@ const IntermediateClasses = () => {
 
   // ── form state
   const defaultForm = {
-    className: "",
     departmentId: "",
     session: "",
+    section:"",
     class: "I" as "I" | "II",
   };
 
   // ✅ subjects managed separately as an array, not a form string
   const [classSubjects, setClassSubjects] = useState<string[]>([]);
   const [form, setForm] = useState(defaultForm);
+  const [className,setClassName]=useState("");
   const [assignedTeachers, setAssignedTeachers] = useState<AssignedTeacher[]>(
     [],
   );
@@ -267,10 +271,12 @@ const IntermediateClasses = () => {
 
   // ── validation
   const validateForm = (): boolean => {
-    if (!form.className.trim()) {
-      toast.error("Class name is required");
-      return false;
-    }
+    if (!form.section.trim()) {
+  toast.error("Section is required"); return false;
+}
+if (!/^[A-Za-z]{2}\d{1}$/.test(form.section.trim())) {
+  toast.error("Section must be 2 letters followed by 1 number (e.g. CS1, PH2)"); return false;
+}
     if (!form.departmentId) {
       toast.error("Department is required");
       return false;
@@ -287,20 +293,17 @@ const IntermediateClasses = () => {
       toast.error("At least one teacher must be assigned");
       return false;
     }
-    for (const t of assignedTeachers) {
-      if (!t.subject) {
-        toast.error("Each teacher must have a subject");
-        return false;
-      }
-      if (t.days.length == 0) {
-        toast.error("Each teacher must have a day");
-        return false;
-      }
-      if (!t.startTime || !t.endTime) {
-        toast.error("Each teacher must have start and end time");
-        return false;
-      }
-    }
+   for (const t of assignedTeachers) {
+  if (!t.subject) {
+    toast.error("Each teacher must have a subject"); return false;
+  }
+  if (t.schedule.length === 0) {                          // ✅ was t.days.length
+    toast.error("Each teacher must have at least one day"); return false;
+  }
+  if (t.schedule.some(s => !s.startTime || !s.endTime)) { // ✅ was flat t.startTime/t.endTime
+    toast.error("Each teacher must have start and end time"); return false;
+  }
+}
     return true;
   };
 
@@ -310,36 +313,37 @@ const IntermediateClasses = () => {
     setSaving(true);
 
     const payload = {
-      className: form.className.trim(),
       departmentId: form.departmentId,
       session: form.session.trim(),
       class: form.class,
+      className:`${getDeptCode(form.departmentId)}-${form.session.slice(2,4)}${form.session.slice(-2)}-${form.section}-${form.class}`,
       category: "intermediate",
       assignes: assignedTeachers,
       classStudents: selectedStudents,
       subjects: classSubjects, // ✅ array, not split string
     };
 
+    setClassName(payload.className)
     console.log(payload);
-    // try {
-    //   const res = await ClassService.createClass(payload);
+    try {
+      const res = await ClassService.createClass(payload);
 
-    //   if (res?.error || res?.statusCode >= 400) {
-    //     if (Array.isArray(res?.errors)) {
-    //       res.errors.forEach((e: string) => toast.error(e));
-    //     } else {
-    //       toast.error(res?.message ?? "Something went wrong");
-    //     }
-    //     return;
-    //   }
+      if (res?.error || res?.statusCode >= 400) {
+        if (Array.isArray(res?.errors)) {
+          res.errors.forEach((e: string) => toast.error(e));
+        } else {
+          toast.error(res?.message ?? "Something went wrong");
+        }
+        return;
+      }
 
-    //   toast.success(res?.message ?? "Class created successfully");
+      toast.success(res?.message ?? "Class created successfully");
 
     // add to local list so it shows immediately
     setLocalClasses((prev) => [
       ...prev,
       {
-        name: form.className,
+        name: className,
         teacher: assignedTeachers[0]
           ? ((
               professors.find(
@@ -351,16 +355,16 @@ const IntermediateClasses = () => {
       },
     ]);
 
-    // resetForm();
+    resetForm();
 
-    // } catch (err: any) {
-    //   const data = err?.response?.data;
-    //   if (Array.isArray(data?.errors))       data.errors.forEach((m: string) => toast.error(m));
-    //   else if (Array.isArray(data?.message)) data.message.forEach((m: string) => toast.error(m));
-    //   else toast.error(data?.message ?? "Network error, please try again");
-    // } finally {
-    //   setSaving(false);
-    // }
+    } catch (err: any) {
+      const data = err?.response?.data;
+      if (Array.isArray(data?.errors))       data.errors.forEach((m: string) => toast.error(m));
+      else if (Array.isArray(data?.message)) data.message.forEach((m: string) => toast.error(m));
+      else toast.error(data?.message ?? "Network error, please try again");
+    } finally {
+      setSaving(false);
+    }
   };
 
   // ── teacher assignment helpers
@@ -375,39 +379,40 @@ const IntermediateClasses = () => {
     setExpandedTeacher(teacherId);
   };
 
-  const confirmTeacher = () => {
-    if (!pendingTeacher) return;
-    if (!pendingTeacher.subject) {
-      toast.error("Please select a subject");
-      return;
-    }
-    if (pendingTeacher.days.length === 0) {
-      toast.error("Please select at least one day");
-      return;
-    }
-    if (!pendingTeacher.startTime || !pendingTeacher.endTime) {
-      toast.error("Please set start and end time");
-      return;
-    }
+ const confirmTeacher = () => {
+  if (!pendingTeacher) return;
+  if (!pendingTeacher.subject)            { toast.error("Please select a subject");               return; }
+  if (pendingTeacher.days.length === 0)   { toast.error("Please select at least one day");        return; }
+  if (!pendingTeacher.startTime || !pendingTeacher.endTime) {
+    toast.error("Please set start and end time"); return;
+  }
 
-    setAssignedTeachers((prev) => {
-      const exists = prev.find((t) => t.teacherId === pendingTeacher.teacherId);
-      if (exists)
-        return prev.map((t) =>
-          t.teacherId === pendingTeacher.teacherId ? pendingTeacher : t,
-        );
-      return [...prev, pendingTeacher];
-    });
+  // ✅ Build schedule array — one entry per day, same time for all
+  const schedule = pendingTeacher.days.map((day) => ({
+    day,
+    startTime: pendingTeacher.startTime,
+    endTime:   pendingTeacher.endTime,
+  }));
 
-    setClassSubjects((prev) =>
-      prev.includes(pendingTeacher.subject)
-        ? prev
-        : [...prev, pendingTeacher.subject],
-    );
-
-    setPendingTeacher(null);
-    setExpandedTeacher(null);
+  const assignee: AssignedTeacher = {
+    teacherId: pendingTeacher.teacherId,
+    subject:   pendingTeacher.subject,
+    schedule,
   };
+
+  setAssignedTeachers((prev) => {
+    const exists = prev.find((t) => t.teacherId === assignee.teacherId);
+    if (exists) return prev.map((t) => t.teacherId === assignee.teacherId ? assignee : t);
+    return [...prev, assignee];
+  });
+
+  setClassSubjects((prev) =>
+    prev.includes(pendingTeacher.subject) ? prev : [...prev, pendingTeacher.subject]
+  );
+
+  setPendingTeacher(null);
+  setExpandedTeacher(null);
+};
   const removeTeacher = (teacherId: string) => {
     const removedTeacher = assignedTeachers.find(
       (t) => t.teacherId === teacherId,
@@ -815,17 +820,22 @@ const IntermediateClasses = () => {
               <div className="overflow-y-auto flex-1 px-6 py-4 space-y-4">
                 {/* Class Name */}
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                    Class Name
-                  </label>
-                  <input
-                    value={form.className}
-                    onChange={set("className")}
-                    placeholder="e.g. ICS-PHY-PB7-I"
-                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
-
+    <label className="mb-1 block text-xs font-medium text-muted-foreground">
+      Section
+      <span className="ml-1 text-muted-foreground/60">(e.g. CS1)</span>
+    </label>
+    <input
+      value={form.section}
+      onChange={(e) => {
+        // ✅ Only allow 2 letters + 1 digit, max 3 chars
+        const val = e.target.value.toUpperCase();
+        if (val.length <= 3) setForm((f) => ({ ...f, section: val }));
+      }}
+      placeholder="CS1"
+      maxLength={3}
+      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+    />
+  </div>
                 {/* Department */}
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">
@@ -957,26 +967,20 @@ const IntermediateClasses = () => {
                   </label>
 
                   {/* assigned chips */}
-                  {assignedTeachers.map((t) => {
-                    const prof = professors.find(
-                      (p: any) => p._id === t.teacherId,
-                    ) as any;
-                    return (
-                      <span
-                        key={t.teacherId}
-                        className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
-                      >
-                        {prof?.name ?? "Teacher"} · {t.subject} ·{" "}
-                        {t.days.join(", ")} · {t.startTime}–{t.endTime}
-                        <button
-                          onClick={() => removeTeacher(t.teacherId)}
-                          className="ml-1 hover:text-destructive"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </span>
-                    );
-                  })}
+                 {assignedTeachers.map((t) => {
+  const prof = professors.find((p: any) => p._id === t.teacherId) as any;
+  return (
+    <span key={t.teacherId}
+      className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+      {prof?.name ?? "Teacher"} · {t.subject} ·{" "}
+      {/* ✅ display each schedule entry */}
+      {t.schedule.map((s) => `${s.day} ${s.startTime}–${s.endTime}`).join(", ")}
+      <button onClick={() => removeTeacher(t.teacherId)} className="ml-1 hover:text-destructive">
+        <X className="h-3 w-3" />
+      </button>
+    </span>
+  );
+})}
 
                   <button
                     onClick={() => setTeacherDropdownOpen(!teacherDropdownOpen)}
@@ -1112,7 +1116,7 @@ const IntermediateClasses = () => {
                                       {/* Day — multi-select checkboxes */}
                                       <div>
                                         <label className="mb-1 block text-xs text-muted-foreground">
-                                          Days
+                                          Days (Select days where the lecture time is same)
                                           {pendingTeacher?.days &&
                                             pendingTeacher.days.length > 0 && (
                                               <span className="ml-1 text-primary">
