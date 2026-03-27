@@ -96,9 +96,9 @@ const AdminSidebar = ({ isOpen, onToggle }: AdminSidebarProps) => {
     if(res?.message !== "Logged Out") return toast.error("Invalid user");
 
     toast.success(res?.message);
-    localStorage.removeItem("token");
-    navigate("/")
     dispatch(clearUser())
+    localStorage.removeItem("persist:root");
+    navigate("/")
   }
 
   return (
