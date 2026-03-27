@@ -1,9 +1,14 @@
-import { API } from "./otherService";
+import { API, token } from "./otherService";
 
 class AuthService{
 
   static async adminLogin(data){
     const res=await fetch(`${API}/auth/admin/login`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+
+    return await res.json();
+  }
+  static async logout(id:string){
+    const res=await fetch(`${API}/auth/logout/${id}`,{method:"GET",headers:{"Content-Type":"application/json","Authorization":`Bearer ${token}`}});
 
     return await res.json();
   }

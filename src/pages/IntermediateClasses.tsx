@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown, ChevronLeft, Users, Clock, BookOpen,
-  Plus, Search, Check, X, UserCircle,
+  Plus, Search, Check, X, UserCircle,Building2
 } from "lucide-react";
 import { toast } from "sonner";
 import { useDepartments } from "@/hooks/useDepartments";
@@ -65,25 +65,20 @@ const IntermediateClasses = () => {
   }, [data]);
 
   // ✅ Group real classes by part (I = 1st Year, II = 2nd Year)
-  const classesByPart = useMemo(() => {
-    if (!classes) return [];
-    const map = new Map<string, { label: string; classes: any[] }>();
-
-    classes.forEach((cls: any) => {
-      const part  = cls.class;
-      const label = part === "I" ? "1st Year" : part === "II" ? "2nd Year" : part;
-      if (!map.has(part)) map.set(part, { label, classes: [] });
-      map.get(part)!.classes.push(cls);
-    });
-
-    // Sort by part value I → II
-    return Array.from(map.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([part, val]) => ({ part, ...val }));
-  }, [classes]);
+  const classesByDept = useMemo(() => {
+  if (!classes) return [];
+  const map = new Map<string, { dept: any; classes: any[] }>();
+  classes.forEach((cls: any) => {
+    const dept = cls.departmentId;
+    if (!dept?._id) return;
+    if (!map.has(dept._id)) map.set(dept._id, { dept, classes: [] });
+    map.get(dept._id)!.classes.push(cls);
+  });
+  return Array.from(map.values());
+}, [classes]);
 
   // ── navigation
-  const [expandedPart,    setExpandedPart]    = useState<string | null>(null);
+  const [expandedDept, setExpandedDept] = useState<string | null>(null);
   const [view,            setView]            = useState<View>("list");
   const [selectedClass,   setSelectedClass]   = useState("");
   const [selectedDate,    setSelectedDate]    = useState("");
@@ -419,84 +414,83 @@ const IntermediateClasses = () => {
 
       <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
         className="mb-6 text-sm text-muted-foreground">
-        {classesByPart.length > 0
-          ? `${classesByPart.reduce((a, p) => a + p.classes.length, 0)} Total Classes`
-          : "No classes yet"}
+        {classesByDept.length} {classesByDept.length === 1 ? "Department" : "Departments"} · {classes?.length ?? 0} Total Classes
       </motion.p>
 
       {/* ── Real classes grouped by part ── */}
       <div className="space-y-3">
-        {classesLoading && (
-          <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-            Loading classes...
+  {classesLoading && (
+    <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+      Loading classes...
+    </div>
+  )}
+
+  {!classesLoading && classesByDept.length === 0 && (
+    <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+      No classes found. Add your first class.
+    </div>
+  )}
+
+  {classesByDept.map(({ dept, classes: deptClasses }, i) => (
+    <motion.div key={dept._id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1 + i * 0.05 }}
+      className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
+
+      {/* Department header */}
+      <button
+        onClick={() => setExpandedDept(expandedDept === dept._id ? null : dept._id)}
+        className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/50 transition-colors">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+            <Building2 className="h-5 w-5 text-primary" />
           </div>
-        )}
-
-        {!classesLoading && classesByPart.length === 0 && (
-          <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-            No classes found. Add your first class.
+          <div>
+            <h3 className="font-display text-sm font-bold text-foreground">{dept.name}</h3>
+            <p className="text-xs text-muted-foreground">
+              {dept.code} · {deptClasses.length} {deptClasses.length === 1 ? "class" : "classes"}
+            </p>
           </div>
-        )}
+        </div>
+        <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${expandedDept === dept._id ? "rotate-180" : ""}`} />
+      </button>
 
-        {classesByPart.map(({ part, label, classes: partClasses }, i) => (
-          <motion.div key={part} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 + i * 0.05 }}
-            className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
-
-            {/* Part header */}
-            <button
-              onClick={() => setExpandedPart(expandedPart === part ? null : part)}
-              className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/50 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <Users className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-display text-sm font-bold text-foreground">{label}</h3>
-                  <p className="text-xs text-muted-foreground">
-                    {partClasses.length} {partClasses.length === 1 ? "class" : "classes"}
-                  </p>
-                </div>
-              </div>
-              <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${expandedPart === part ? "rotate-180" : ""}`} />
-            </button>
-
-            <AnimatePresence>
-              {expandedPart === part && (
-                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                  <div className="border-t border-border px-4 py-3 space-y-2">
-                    {partClasses.map((cls: any) => (
-                      <div key={cls._id}
-                        onClick={() => { setSelectedClass(cls.className); setView("dates"); }}
-                        className="flex items-center justify-between gap-2 rounded-lg bg-secondary/50 px-4 py-3 cursor-pointer hover:bg-secondary transition-colors">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 shrink-0">
-                            <BookOpen className="h-4 w-4 text-primary" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-foreground">{cls.className}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {cls.departmentId?.code ?? "—"} · {cls.session}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4 shrink-0">
-                          <div className="text-right hidden sm:block">
-                            <p className="text-xs text-muted-foreground">{cls.classStudents?.length ?? 0} students</p>
-                            <p className="text-xs text-muted-foreground">{cls.assignes?.length ?? 0} teachers</p>
-                          </div>
-                          <span className="text-xs font-medium text-primary">View →</span>
-                        </div>
-                      </div>
-                    ))}
+      <AnimatePresence>
+        {expandedDept === dept._id && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+            <div className="border-t border-border px-4 py-3 space-y-2">
+              {deptClasses.map((cls: any) => (
+                <div key={cls._id}
+                  onClick={() => { setSelectedClass(cls.className); setView("dates"); }}
+                  className="flex items-center justify-between gap-2 rounded-lg bg-secondary/50 px-4 py-3 cursor-pointer hover:bg-secondary transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 shrink-0">
+                      <BookOpen className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{cls.className}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {/* ✅ Show part label for intermediate */}
+                        {cls.class === "I" ? "1st Year" : "2nd Year"} · {cls.session}
+                      </p>
+                    </div>
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  <div className="flex items-center gap-4 shrink-0">
+                    <div className="text-right hidden sm:block">
+                      <p className="text-xs text-muted-foreground">{cls.classStudents?.length ?? 0} students</p>
+                      <p className="text-xs text-muted-foreground">{cls.assignes?.length ?? 0} teachers</p>
+                    </div>
+                    <span className="text-xs font-medium text-primary">View →</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </motion.div>
-        ))}
-      </div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  ))}
+</div>
 
       {/* ══ ADD CLASS MODAL ══════════════════════════════════════ */}
       <AnimatePresence>

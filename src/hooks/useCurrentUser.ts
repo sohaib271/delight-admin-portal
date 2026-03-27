@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import UserService from "@/services/userService";
 
-export const useCurrentUser = (isLoggedIn: boolean) => {
+export const useCurrentUser = (enabled:boolean) => {
 
   return useQuery({
     queryKey: ["currentUser"],
     queryFn: UserService.getCurrentUser,
-    enabled: isLoggedIn,   // 👈 prevents query if logged out
-    retry: false
+    enabled,
+    retry:false
   });
 
 };

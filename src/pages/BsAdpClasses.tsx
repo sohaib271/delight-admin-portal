@@ -65,7 +65,9 @@ interface AssignedTeacher {
 const BsAdpClasses = () => {
   const { data: departments } = useDepartments();
   const { data } = useUsers("");
-  const { data: classes, isLoading: classesLoading } = useClasses("bs");
+  const { data: classes, refetch, isLoading: classesLoading } = useClasses("");
+
+  
 
   const { profUsers, bsAdpStudents } = useMemo(() => {
     if (!data) return { profUsers: [], bsAdpStudents: [] };
@@ -79,16 +81,28 @@ const BsAdpClasses = () => {
 
   // ✅ Group real classes by department
   const classesByDept = useMemo(() => {
-    if (!classes) return [];
-    const map = new Map<string, { dept: any; classes: any[] }>();
-    classes.forEach((cls: any) => {
-      const dept = cls.departmentId;
-      if (!dept?._id) return;
-      if (!map.has(dept._id)) map.set(dept._id, { dept, classes: [] });
-      map.get(dept._id)!.classes.push(cls);
-    });
-    return Array.from(map.values());
-  }, [classes]);
+  if (!classes) return [];
+
+  // ✅ filter only BS & ADP classes first
+  const filteredClasses = classes.filter(
+    (cls: any) => cls.category === "bs" || cls.category === "adp"
+  );
+
+  const map = new Map<string, { dept: any; classes: any[] }>();
+
+  filteredClasses.forEach((cls: any) => {
+    const dept = cls.departmentId;
+    if (!dept?._id) return;
+
+    if (!map.has(dept._id)) {
+      map.set(dept._id, { dept, classes: [] });
+    }
+
+    map.get(dept._id)!.classes.push(cls);
+  });
+
+  return Array.from(map.values());
+}, [classes]);
 
   // ── navigation
   const [expandedDept,    setExpandedDept]    = useState<string | null>(null);
@@ -213,6 +227,7 @@ const BsAdpClasses = () => {
         return;
       }
       toast.success(res?.message ?? "Class created successfully");
+      await refetch();
       resetForm();
     } catch (err: any) {
       const d = err?.response?.data;
@@ -480,9 +495,9 @@ const BsAdpClasses = () => {
                           </div>
                           <div>
                             <p className="text-sm font-medium text-foreground">{cls.className}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {cls.category?.toUpperCase()} · Sem {cls.class} · {cls.session}
-                            </p>
+                           <p className="text-xs text-muted-foreground">
+  {cls.category?.toUpperCase()} · {ALL_SEMESTERS.find(s => s.value === cls.class)?.label ?? cls.class} Sem · {cls.session}
+</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-4 shrink-0">

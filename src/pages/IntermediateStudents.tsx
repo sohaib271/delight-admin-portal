@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useDepartments } from "@/hooks/useDepartments";
 import UserService from "@/services/userService";
 import { useUsers } from "@/hooks/useUsers";
+import { useSelector } from "react-redux";
 
 const PREVIEW_COUNT = 5;
 
@@ -46,48 +47,46 @@ const defaultForm = {
 };
 
 const IntermediateStudents = () => {
+  const user=useSelector((state:any)=>state.user.user);
   const { data: departments } = useDepartments();
-  const { data: users, isLoading } = useUsers("student");
-
+  const { data: users, refetch, isLoading } = useUsers("student");
 
   const intermediateDept = useMemo(() =>
-    (departments || []).filter((u: any) => u?.category === "intermediate"),
+    departments?.filter((u: any) => u?.category === "intermediate"),
     [departments]
   );
-
   // ✅ Derived — no separate state needed, always in sync with API data
   const intermediateUsers = useMemo(() =>
-    (users || []).filter((u: any) => u?.category === "intermediate"),
+    users?.filter((u: any) => u?.category === "intermediate"),
     [users]
   );
-
   const [search, setSearch] = useState("");
   const [selectedClass, setSelectedClass] = useState("I");
   const [showModal, setShowModal] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [saving, setSaving] = useState(false);
   // ✅ Local additions on top of server data
-  const [localStudents, setLocalStudents] = useState<any[]>([]);
+  // const [localStudents, setLocalStudents] = useState<any[]>([]);
   const [detailStudent, setDetailStudent] = useState<any | null>(null);
   const [form, setForm] = useState(defaultForm);
 
   // ✅ All students = server data + any locally added ones this session
-  const allStudents = useMemo(() => [...intermediateUsers, ...localStudents], [intermediateUsers, localStudents]);
+  // const allStudents = useMemo(() => [...intermediateUsers, ...localStudents], [intermediateUsers, localStudents]);
 
   const set = (key: string) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
       setForm((f) => ({ ...f, [key]: e.target.value }));
 
-  const filtered = allStudents.filter(
-    (s) =>
+  const filtered = intermediateUsers?.filter(
+    (s:any) =>
       (s?.name?.toLowerCase().includes(search.toLowerCase()) ||
         s?.specialId?.toLowerCase().includes(search.toLowerCase())) &&
       s?.class === selectedClass
   );
 
-  const displayed = showAll ? filtered : filtered.slice(0, PREVIEW_COUNT);
+  const displayed = showAll ? filtered : filtered?.slice(0, PREVIEW_COUNT);
 
-  const handleDelete = (id: string) => setLocalStudents((prev) => prev.filter((s) => s._id !== id));
+  const handleDelete = (id: string) => console.log("Delete");
 
   const validateForm = (): boolean => {
     if (!form.name.trim() || !form.lastName.trim()) {
@@ -173,9 +172,10 @@ const IntermediateStudents = () => {
       }
 
       toast.success(res?.message ?? "Student added successfully");
-      setLocalStudents((prev) => [...prev, res?.user]);
+      // setLocalStudents((prev) => [...prev, res?.user]);
       setShowModal(false);
       setForm({ ...defaultForm, class: selectedClass });
+      await refetch();
 
     } catch (err: any) {
       // ✅ Fixed: was err?.res?.message — axios uses err.response.data
@@ -193,7 +193,9 @@ const IntermediateStudents = () => {
     }
   };
 
-  if (isLoading) return <TableSkeleton rows={5} cols={7} />;
+  if (isLoading || !user) {
+  return <TableSkeleton rows={5} cols={7} />;
+}
 
   return (
     <div>
@@ -204,7 +206,7 @@ const IntermediateStudents = () => {
 
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
         className="mb-4 flex flex-wrap items-center gap-3">
-        <span className="font-display text-sm font-semibold text-foreground">Total: {filtered.length}</span>
+        <span className="font-display text-sm font-semibold text-foreground">Total: {filtered?.length}</span>
         <select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)}
           className="rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring">
           <option value="I">1st Year</option>

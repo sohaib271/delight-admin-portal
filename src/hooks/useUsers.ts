@@ -4,9 +4,9 @@ import UserService from "@/services/userService";
 export const useUsers = (role?:string) => {
 
   return useQuery({
-    queryKey: ["users"],
+    queryKey: ["users",role],
     queryFn: ()=>UserService.getUsers(role),   // 👈 prevents query if logged out
-    retry: false
+    retry: false,
   });
 
 };

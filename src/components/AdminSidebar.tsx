@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { LayoutDashboard, Users, CalendarCheck, BookOpen, Trophy, Wallet, GraduationCap, LogOut, X, ChevronDown, School } from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import AuthService from "@/services/authService";
+import { toast } from "sonner";
+import { useDispatch, useSelector } from "react-redux";
+import { clearUser } from "@/store/userSlice";
 
 interface NavItem {
   to: string;
@@ -75,6 +79,9 @@ interface AdminSidebarProps {
 }
 
 const AdminSidebar = ({ isOpen, onToggle }: AdminSidebarProps) => {
+  const navigate=useNavigate();
+  const dispatch=useDispatch()
+  const user=useSelector((state:any)=>state?.user.user);
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>(
     navItems.filter((item) => item.children && location.pathname.startsWith(item.to)).map((item) => item.to)
@@ -83,6 +90,16 @@ const AdminSidebar = ({ isOpen, onToggle }: AdminSidebarProps) => {
   const toggleExpand = (to: string) => {
     setExpandedItems((prev) => (prev.includes(to) ? prev.filter((i) => i !== to) : [...prev, to]));
   };
+
+  async function signOut(){
+    const res=await AuthService.logout(user?._id);
+    if(res?.message !== "Logged Out") return toast.error("Invalid user");
+
+    toast.success(res?.message);
+    localStorage.removeItem("token");
+    navigate("/")
+    dispatch(clearUser())
+  }
 
   return (
     <>
@@ -114,16 +131,16 @@ const AdminSidebar = ({ isOpen, onToggle }: AdminSidebarProps) => {
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
             <Users className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="font-display text-lg font-bold text-card">Student App</span>
+          <span className="font-display text-lg font-bold text-card">GIC Admin Panel</span>
         </div>
 
         <div className="mx-4 mb-6 flex items-center gap-3 rounded-xl bg-sidebar-hover px-4 py-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-            JD
+            {user?.name.split(" ")[0][0]}{user?.name.split(" ")[1][0]}
           </div>
           <div>
-            <p className="text-sm font-semibold text-card">John Doe</p>
-            <p className="text-xs text-sidebar-foreground">Administrator</p>
+            <p className="text-sm font-semibold text-card">{user?.name}</p>
+            <p className="text-xs text-sidebar-foreground">{user?.role==="admin"?"Administrator":user?.role}</p>
           </div>
         </div>
 
@@ -198,10 +215,10 @@ const AdminSidebar = ({ isOpen, onToggle }: AdminSidebarProps) => {
         </nav>
 
         <div className="p-3">
-          <NavLink to="/" className="sidebar-link text-destructive">
+          <button onClick={()=>signOut()} className="sidebar-link text-destructive cursor-pointer">
             <LogOut className="h-5 w-5" />
             Logout
-          </NavLink>
+          </button>
         </div>
       </aside>
     </>
