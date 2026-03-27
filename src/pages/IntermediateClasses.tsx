@@ -53,7 +53,7 @@ interface AssignedTeacher {
 
 const IntermediateClasses = () => {
   const { data: departments }  = useDepartments();
-  const { data: classes, isLoading: classesLoading } = useClasses("intermediate");
+  const { data: classes, refetch, isLoading: classesLoading } = useClasses("intermediate");
   const { data }               = useUsers("");
 
   const { profUsers, interStudents } = useMemo(() => {
@@ -196,6 +196,7 @@ const IntermediateClasses = () => {
         return;
       }
       toast.success(res?.message ?? "Class created successfully");
+      await refetch();
       resetForm();
     } catch (err: any) {
       const d = err?.response?.data;
