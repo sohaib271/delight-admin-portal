@@ -9,6 +9,7 @@ import { useDepartments } from "@/hooks/useDepartments";
 import { useUsers } from "@/hooks/useUsers";
 import ClassService from "@/services/classService";
 import { useClasses } from "@/hooks/useClasses";
+import ClassDetailView from "@/components/ClassDetailView";
 
 const classDates = [
   { date: "2025-03-10", day: "Monday"    },
@@ -54,7 +55,7 @@ const ALL_SEMESTERS = [
   { label: "8th", value: "VIII" },
 ];
 
-type View = "list" | "dates" | "lectures" | "lectureDetail";
+type View = "list" | "classDetail" | "dates" | "lectures" | "lectureDetail";
 
 interface AssignedTeacher {
   teacherId: string;
@@ -108,6 +109,7 @@ const BsAdpClasses = () => {
   const [expandedDept,    setExpandedDept]    = useState<string | null>(null);
   const [view,            setView]            = useState<View>("list");
   const [selectedSection, setSelectedSection] = useState("");
+  const [selectedClassData, setSelectedClassData] = useState<any>(null);
   const [selectedDate,    setSelectedDate]    = useState("");
   const [selectedLecture, setSelectedLecture] = useState("");
   const [showAddForm,     setShowAddForm]     = useState(false);
@@ -165,7 +167,8 @@ const BsAdpClasses = () => {
   const goBack = () => {
     if (view === "lectureDetail") setView("lectures");
     else if (view === "lectures") setView("dates");
-    else if (view === "dates")    setView("list");
+    else if (view === "dates")    setView("classDetail");
+    else if (view === "classDetail") setView("list");
   };
 
   const currentLectures = lecturesByDate[selectedDate] || [];
