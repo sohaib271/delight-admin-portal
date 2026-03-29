@@ -180,6 +180,7 @@ const IntermediateClasses = () => {
   const [expandedDept, setExpandedDept] = useState<string | null>(null);
   const [view, setView] = useState<View>("list");
   const [selectedClass, setSelectedClass] = useState("");
+  const [selectedClassData, setSelectedClassData] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedLecture, setSelectedLecture] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
