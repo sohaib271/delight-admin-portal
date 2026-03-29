@@ -384,6 +384,55 @@ const BsAdpClasses = () => {
     );
   }
 
+  if (view === "classDetail" && selectedClassData) {
+    return (
+      <ClassDetailView
+        classData={selectedClassData}
+        professors={professors}
+        students={bsAdpStudents}
+        onBack={() => setView("list")}
+        onViewSchedule={() => {
+          setSelectedSection(selectedClassData.className);
+          setView("dates");
+        }}
+        onRemoveTeacher={(teacherId) => {
+          setSelectedClassData((prev: any) => ({
+            ...prev,
+            assignes: (prev.assignes || []).filter((a: any) => (a.teacherId?._id || a.teacherId) !== teacherId),
+          }));
+          toast.success("Teacher removed from class");
+        }}
+        onRemoveStudent={(studentId) => {
+          setSelectedClassData((prev: any) => ({
+            ...prev,
+            classStudents: (prev.classStudents || []).filter((s: any) => (s?._id || s) !== studentId),
+          }));
+          toast.success("Student removed from class");
+        }}
+        onAddTeachers={(teachers) => {
+          setSelectedClassData((prev: any) => ({
+            ...prev,
+            assignes: [...(prev.assignes || []), ...teachers],
+          }));
+        }}
+        onAddStudents={(studentIds) => {
+          setSelectedClassData((prev: any) => ({
+            ...prev,
+            classStudents: [...(prev.classStudents || []), ...studentIds],
+          }));
+        }}
+        onUpdateTeacherSchedule={(teacherId, schedule) => {
+          setSelectedClassData((prev: any) => ({
+            ...prev,
+            assignes: (prev.assignes || []).map((a: any) =>
+              (a.teacherId?._id || a.teacherId) === teacherId ? { ...a, schedule } : a
+            ),
+          }));
+        }}
+      />
+    );
+  }
+
   if (view === "dates") {
     return (
       <div>
@@ -490,7 +539,7 @@ const BsAdpClasses = () => {
                   <div className="border-t border-border px-4 py-3 space-y-2">
                     {deptClasses.map((cls: any) => (
                       <div key={cls._id}
-                        onClick={() => { setSelectedSection(cls.className); setView("dates"); }}
+                        onClick={() => { setSelectedClassData(cls); setSelectedSection(cls.className); setView("classDetail"); }}
                         className="flex items-center justify-between gap-2 rounded-lg bg-secondary/50 px-4 py-3 cursor-pointer hover:bg-secondary transition-colors">
                         <div className="flex items-center gap-3">
                           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 shrink-0">
