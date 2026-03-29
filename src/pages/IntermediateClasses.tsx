@@ -17,6 +17,7 @@ import { useDepartments } from "@/hooks/useDepartments";
 import { useUsers } from "@/hooks/useUsers";
 import ClassService from "@/services/classService";
 import { useClasses } from "@/hooks/useClasses";
+import ClassDetailView from "@/components/ClassDetailView";
 
 const classDates = [
   { date: "2025-03-10", day: "Monday" },
@@ -138,7 +139,7 @@ const DAYS = [
   "Saturday",
 ];
 
-type View = "list" | "dates" | "lectures" | "lectureDetail";
+type View = "list" | "classDetail" | "dates" | "lectures" | "lectureDetail";
 
 interface AssignedTeacher {
   teacherId: string;
