@@ -246,7 +246,8 @@ const IntermediateClasses = () => {
   const goBack = () => {
     if (view === "lectureDetail") setView("lectures");
     else if (view === "lectures") setView("dates");
-    else if (view === "dates") setView("list");
+    else if (view === "dates") setView("classDetail");
+    else if (view === "classDetail") setView("list");
   };
 
   const currentLectures = lecturesByDate[selectedDate] || [];
