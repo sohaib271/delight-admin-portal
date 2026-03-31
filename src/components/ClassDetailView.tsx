@@ -172,6 +172,7 @@ export default function ClassDetailView({
     () => new Set(assignedTeachers.map(resolveTeacherId)),
     [assignedTeachers],
   );
+
   const enrolledStudentIds = useMemo(
     () => new Set(classStudents.map(resolveStudentId)),
     [classStudents],
