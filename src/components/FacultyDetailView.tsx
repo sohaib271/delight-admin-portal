@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { ArrowLeft, Calendar, Clock, User, BookOpen, Users, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -10,11 +10,13 @@ interface FacultyDetailViewProps {
 }
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const TIME_SLOTS = [
+  "08:00 AM", "09:00 AM", "10:00 AM", "11:00 AM",
+  "12:00 PM", "01:00 PM", "02:00 PM", "03:00 PM",
+];
 
-// Mock schedule data — in production this comes from assigned classes
 const getMockSchedule = (faculty: any) => {
   if (!faculty?.assignedClasses || faculty.assignedClasses.length === 0) {
-    // Generate mock schedule based on subjects
     const subjects = faculty?.subjects || [];
     if (subjects.length === 0) return {};
 
@@ -44,6 +46,21 @@ const FacultyDetailView = ({ faculty, type, onBack }: FacultyDetailViewProps) =>
   const schedule = isProfessor ? getMockSchedule(faculty) : {};
   const hasSchedule = Object.keys(schedule).length > 0;
 
+  // Build a lookup: day+time -> lecture
+  const lookup: Record<string, { subject: string; className: string; duration: string }> = {};
+  const activeDays = DAYS.filter((d) => schedule[d] && schedule[d].length > 0);
+  const activeSlots = new Set<string>();
+
+  Object.entries(schedule).forEach(([day, lectures]) => {
+    lectures.forEach((lec) => {
+      lookup[`${day}||${lec.time}`] = lec;
+      activeSlots.add(lec.time);
+    });
+  });
+
+  const displaySlots = TIME_SLOTS.filter((t) => activeSlots.has(t));
+  const displayDays = activeDays.length > 0 ? activeDays : DAYS.slice(0, 5);
+
   const details: [string, string][] = [
     ["First Name", faculty?.name ?? "—"],
     ["Last Name", faculty?.lastName ?? "—"],
@@ -72,7 +89,7 @@ const FacultyDetailView = ({ faculty, type, onBack }: FacultyDetailViewProps) =>
             <ArrowLeft className="h-4 w-4" /> Back to Details
           </Button>
           <h2 className="font-display text-lg sm:text-xl font-bold text-foreground">
-            {faculty?.name} {faculty?.lastName}'s Schedule
+            {faculty?.name} {faculty?.lastName}'s Timetable
           </h2>
         </div>
 
@@ -82,57 +99,70 @@ const FacultyDetailView = ({ faculty, type, onBack }: FacultyDetailViewProps) =>
             <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="font-display text-lg font-semibold text-foreground mb-2">No Schedule Available</h3>
             <p className="text-sm text-muted-foreground max-w-sm">
-              This professor is not currently assigned to any class. Assign them to a class to generate their schedule.
+              This professor is not currently assigned to any class.
             </p>
           </motion.div>
         ) : (
-          <div className="grid gap-3 sm:gap-4">
-            {DAYS.map((day) => {
-              const lectures = schedule[day];
-              if (!lectures || lectures.length === 0) return (
-                <motion.div key={day} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                  className="rounded-xl border border-border bg-card p-3 sm:p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Calendar className="h-4 w-4 text-primary" />
-                    <h3 className="font-display text-sm sm:text-base font-semibold text-foreground">{day}</h3>
-                  </div>
-                  <p className="text-xs sm:text-sm text-muted-foreground pl-6">No lectures scheduled</p>
-                </motion.div>
-              );
-
-              return (
-                <motion.div key={day} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                  className="rounded-xl border border-border bg-card overflow-hidden">
-                  <div className="flex items-center gap-2 px-3 sm:px-4 py-3 border-b border-border bg-secondary/30">
-                    <Calendar className="h-4 w-4 text-primary" />
-                    <h3 className="font-display text-sm sm:text-base font-semibold text-foreground">{day}</h3>
-                    <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                      {lectures.length} lecture{lectures.length > 1 ? "s" : ""}
-                    </span>
-                  </div>
-                  <div className="divide-y divide-border">
-                    {lectures.map((lec, i) => (
-                      <div key={i} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-4 px-3 sm:px-4 py-2.5 sm:py-3 hover:bg-secondary/30 transition-colors">
-                        <div className="flex items-center gap-2 text-xs sm:text-sm">
-                          <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                          <span className="font-medium text-foreground">{lec.time}</span>
-                          <span className="text-muted-foreground">({lec.duration})</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs sm:text-sm pl-5 sm:pl-0">
-                          <BookOpen className="h-3.5 w-3.5 text-primary shrink-0" />
-                          <span className="text-foreground">{lec.subject}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs sm:text-sm pl-5 sm:pl-0 sm:ml-auto">
-                          <Users className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                          <span className="text-muted-foreground">{lec.className}</span>
-                        </div>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse min-w-[600px]">
+                <thead>
+                  <tr className="bg-secondary/50">
+                    <th className="border-b border-r border-border px-3 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-24">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="h-3.5 w-3.5" /> Time
                       </div>
+                    </th>
+                    {displayDays.map((day) => (
+                      <th key={day} className="border-b border-r border-border last:border-r-0 px-3 py-3 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        <span className="hidden sm:inline">{day}</span>
+                        <span className="sm:hidden">{day.slice(0, 3)}</span>
+                      </th>
                     ))}
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displaySlots.map((slot, si) => (
+                    <tr key={slot} className={si % 2 === 0 ? "bg-card" : "bg-secondary/20"}>
+                      <td className="border-b border-r border-border px-3 py-3 text-xs sm:text-sm font-medium text-foreground whitespace-nowrap">
+                        {slot}
+                      </td>
+                      {displayDays.map((day) => {
+                        const lec = lookup[`${day}||${slot}`];
+                        return (
+                          <td key={day} className="border-b border-r border-border last:border-r-0 px-1.5 py-1.5 text-center align-middle">
+                            {lec ? (
+                              <div className="rounded-lg bg-primary/10 border border-primary/20 px-2 py-2 space-y-0.5 transition-colors hover:bg-primary/15">
+                                <div className="flex items-center justify-center gap-1">
+                                  <BookOpen className="h-3 w-3 text-primary shrink-0" />
+                                  <span className="text-xs sm:text-sm font-semibold text-primary truncate">{lec.subject}</span>
+                                </div>
+                                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{lec.className}</p>
+                                <p className="text-[10px] text-muted-foreground/70">{lec.duration}</p>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground/40">—</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Summary */}
+            <div className="flex flex-wrap items-center gap-4 px-4 py-3 border-t border-border bg-secondary/30 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <span className="h-3 w-3 rounded bg-primary/10 border border-primary/20" />
+                Lecture
+              </span>
+              <span>Total: <strong className="text-foreground">{Object.values(schedule).reduce((s, l) => s + l.length, 0)}</strong> lectures / week</span>
+              <span>Days: <strong className="text-foreground">{activeDays.length}</strong></span>
+            </div>
+          </motion.div>
         )}
       </motion.div>
     );
