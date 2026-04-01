@@ -9,9 +9,11 @@ import AuthService from "@/services/authService";
 import { useDispatch } from "react-redux";
 import { setUser } from "@/store/userSlice";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 const Login = () => {
   const navigate = useNavigate();
+  const {isAuthenticated}=useAuth();
   const dispatch=useDispatch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,11 +39,11 @@ const Login = () => {
       return;
     }
 
-    // ✅ Store token
-    localStorage.setItem("token", res?.access_token);
-
     // ❌ REMOVE THIS (important)
-    dispatch(setUser(res?.user));
+    dispatch(setUser({
+  user: res?.user,
+  token: res?.access_token
+}));;
 
     setError("");
 

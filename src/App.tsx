@@ -27,15 +27,15 @@ import {Provider} from "react-redux"
 import IntermediateClasses from "./pages/IntermediateClasses";
 import BsAdpClasses from "./pages/BsAdpClasses";
 import NotFound from "./pages/NotFound";
-import { store } from "./store/store";
-import AuthProvider from "./provider/AuthProvider";
+import { persistor, store } from "./store/store";
+import { PersistGate } from "redux-persist/integration/react";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <Provider store={store}>
+    <PersistGate loading={null} persistor={persistor}>
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -69,8 +69,8 @@ const App = () => (
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
-    </AuthProvider>
   </QueryClientProvider>
+  </PersistGate>
   </Provider>
 );
 

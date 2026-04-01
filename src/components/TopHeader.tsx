@@ -1,7 +1,7 @@
 import { useLocation } from "react-router-dom";
 import { Bell, ChevronDown, Menu } from "lucide-react";
 import { motion } from "framer-motion";
-import { useSelector } from "react-redux";
+import { useAuth } from "@/hooks/useAuth";
 
 const routeTitles: Record<string, string> = {
   dashboard: "Dashboard",
@@ -21,7 +21,7 @@ interface TopHeaderProps {
 }
 
 const TopHeader = ({ onMenuToggle }: TopHeaderProps) => {
-  const user=useSelector((state:any)=>state.user.user);
+ const {user}=useAuth();
   const location = useLocation();
   const segments = location.pathname.split("/").filter(Boolean);
   const lastSegment = segments[segments.length - 1] || "dashboard";

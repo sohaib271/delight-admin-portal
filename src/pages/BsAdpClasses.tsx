@@ -54,7 +54,7 @@ const ALL_SEMESTERS = [
   { label: "8th", value: "VIII" },
 ];
 
-type View = "list" | "dates" | "lectures" | "lectureDetail";
+type View = "list" | "classDetail" | "dates" | "lectures" | "lectureDetail";
 
 interface AssignedTeacher {
   teacherId: string;
