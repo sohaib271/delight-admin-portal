@@ -49,6 +49,7 @@ const defaultForm = {
 const IntermediateStudents = () => {
   const user=useSelector((state:any)=>state.user.user);
   const { data: departments } = useDepartments();
+  console.log(departments)
   const { data: users, refetch, isLoading } = useUsers("student");
 
   const intermediateDept = useMemo(() =>
@@ -192,6 +193,9 @@ const IntermediateStudents = () => {
       setSaving(false);
     }
   };
+
+
+  
 
   if (isLoading || !user) {
   return <TableSkeleton rows={5} cols={7} />;

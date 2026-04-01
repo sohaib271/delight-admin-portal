@@ -1,5 +1,5 @@
 import { store } from "@/store/store";
-import { API} from "./otherService";
+import {API} from "./otherService";
 
 
 class DepartmentService{
@@ -8,7 +8,7 @@ class DepartmentService{
     return store.getState().user.token;
   }
  
-  static async getAllDepatments(){
+  static async getAllDepartments(){
     const res=await fetch(`${API}/departments`,{method:"GET",headers:{"Content-Type":"application/json","Authorization":`Bearer ${this.getToken()}`}});
 
     const result=await res.json();

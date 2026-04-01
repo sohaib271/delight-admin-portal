@@ -1,22 +1,198 @@
 import { store } from "@/store/store";
-import { API} from "./otherService";
+import { API } from "./otherService";
 
-class ClassService{
-
-     static getToken() {
+class ClassService {
+  static getToken() {
     return store.getState().user.token;
   }
 
-   static async createClass(data){
-        const res=await fetch(`${API}/class/create`,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${this.getToken()}`},body:JSON.stringify(data)});
+  private static authHeaders() {
+    return {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${this.getToken()}`,
+    };
+  }
 
-        return await res.json(); 
+  // ─── Classes ────────────────────────────────────────────────
+
+  static async createClass(data: any) {
+    const res = await fetch(`${API}/class/create`, {
+      method: "POST",
+      headers: this.authHeaders(),
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  }
+
+  static async getClasses(category?: string) {
+    const query = category ? `?category=${category}` : "";
+    const res = await fetch(`${API}/class/all${query}`, {
+      method: "GET",
+      headers: this.authHeaders(),
+    });
+    return res.json();
+  }
+
+  static async getClassInfo(classId: string) {
+    const res = await fetch(`${API}/class/get-class-info/${classId}`, {
+      method: "GET",
+      headers: this.authHeaders(),
+    });
+    return res.json();
+  }
+
+  static async getClassStudents(classId: string) {
+    const res = await fetch(`${API}/class/get-class-students/${classId}`, {
+      method: "GET",
+      headers: this.authHeaders(),
+    });
+    return res.json();
+  }
+
+  static async getAssignedTeachers(classId: string) {
+    const res = await fetch(`${API}/class/get-assigned-teachers/${classId}`, {
+      method: "GET",
+      headers: this.authHeaders(),
+    });
+    return res.json();
+  }
+
+  static async updateClass(classId: string, data: { class?: string; session?: string }) {
+    const res = await fetch(`${API}/class/update-class/${classId}`, {
+      method: "PATCH",
+      headers: this.authHeaders(),
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  }
+
+  // ─── Teachers ───────────────────────────────────────────────
+
+  /**
+   * Assign a teacher to a class with subject + schedule.
+   * POST /class/assign-teacher-to-class/:classId
+   */
+  static async addTeacherToClass(
+    classId: string,
+    payload: {
+      teacherId: string;
+      subject: string;
+      schedule: { day: string; startTime: string; endTime: string }[];
     }
+  ) {
+    const res = await fetch(`${API}/class/assign-teacher-to-class/${classId}`, {
+      method: "POST",
+      headers: this.authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  }
 
-    static async getClasses(category){
-        const res=await fetch(`${API}/class/all?category=${category}`,{method:"GET",headers:{"Content-Type":"application/json","Authorization":`Bearer ${this.getToken()}`}});
-        return await res.json();
-    }
+  /**
+   * Remove a teacher from a class.
+   * PATCH /class/remove-teacher-from-class/:classId/:teacherId
+   */
+  static async removeTeacherFromClass(classId: string, teacherId: string) {
+    const res = await fetch(
+      `${API}/class/remove-teacher-from-class/${classId}/${teacherId}`,
+      {
+        method: "PATCH",
+        headers: this.authHeaders(),
+      }
+    );
+    return res.json();
+  }
 
+  /**
+   * Update a teacher's subject or full schedule (replaces existing schedule).
+   * PATCH /class/:id/assignes/:teacherId
+   */
+  static async updateAssignedTeacher(
+    classId: string,
+    teacherId: string,
+    data: { subject?: string; schedule?: { day: string; startTime: string; endTime: string }[] }
+  ) {
+    const res = await fetch(`${API}/class/${classId}/assignes/${teacherId}`, {
+      method: "PATCH",
+      headers: this.authHeaders(),
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  }
+
+  // ─── Teacher Schedule ────────────────────────────────────────
+
+  /**
+   * Replace a teacher's entire schedule.
+   * PATCH /class/:id/assignes/:teacherId/schedule
+   */
+  static async updateTeacherSchedule(
+    classId: string,
+    teacherId: string,
+    schedule: { day: string; startTime: string; endTime: string }[]
+  ) {
+    const res = await fetch(
+      `${API}/class/${classId}/assignes/${teacherId}/schedule`,
+      {
+        method: "PATCH",
+        headers: this.authHeaders(),
+        body: JSON.stringify({ schedule }),
+      }
+    );
+    return res.json();
+  }
+
+  /**
+   * Append new schedule entries to a teacher (no duplicates allowed by backend).
+   * POST /class/:id/assignes/:teacherId/schedule
+   */
+  static async addTeacherSchedule(
+    classId: string,
+    teacherId: string,
+    schedule: { day: string; startTime: string; endTime: string }[]
+  ) {
+    const res = await fetch(
+      `${API}/class/${classId}/assignes/${teacherId}/schedule`,
+      {
+        method: "POST",
+        headers: this.authHeaders(),
+        body: JSON.stringify({ schedule }),
+      }
+    );
+    return res.json();
+  }
+
+  // ─── Students ───────────────────────────────────────────────
+
+  /**
+   * Add a single student to a class.
+   * POST /class/add-student-in-class/:classId/:studentId
+   */
+  static async addStudentToClass(classId: string, studentId: string) {
+    const res = await fetch(
+      `${API}/class/add-student-in-class/${classId}/${studentId}`,
+      {
+        method: "POST",
+        headers: this.authHeaders(),
+      }
+    );
+    return res.json();
+  }
+
+  /**
+   * Remove a student from a class.
+   * PATCH /class/remove-student-from-class/:classId/:studentId
+   */
+  static async removeStudentFromClass(classId: string, studentId: string) {
+    const res = await fetch(
+      `${API}/class/remove-student-from-class/${classId}/${studentId}`,
+      {
+        method: "PATCH",
+        headers: this.authHeaders(),
+      }
+    );
+    return res.json();
+  }
 }
+
 export default ClassService;

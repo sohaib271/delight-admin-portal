@@ -6,7 +6,7 @@ export const useDepartments = () => {
 
   return useQuery({
     queryKey: ["departments"],
-    queryFn: DepartmentService.getAllDepatments,
+    queryFn: ()=>DepartmentService.getAllDepartments(),
     retry: false
   });
 
