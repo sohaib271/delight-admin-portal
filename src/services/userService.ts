@@ -7,30 +7,42 @@ class UserService{
    static getToken() {
     return store.getState().user.token;
   }
+  private static authHeaders() {
+    return {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${this.getToken()}`,
+    };
+  }
 
   static async getCurrentUser(){
-    const res=await fetch(`${API}/users/me`,{method:"GET",headers:{"Content-Type":"application/json","Authorization":`Bearer ${this.getToken()}`}});
+    const res=await fetch(`${API}/users/me`,{method:"GET",headers:this.authHeaders()});
 
     const result=await res.json();
     return result;
   }
   static async addProf(data){
-    const res=await fetch(`${API}/users/professor`,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${this.getToken()}`},body:JSON.stringify(data)});
+    const res=await fetch(`${API}/users/professor`,{method:"POST",headers:this.authHeaders(),body:JSON.stringify(data)});
     const result=await res.json();
     return result;
   }
   static async getUsers(role:string){
-    const res=await fetch(`${API}/users?role=${role}`,{method:"GET",headers:{"Content-Type":"application/json","Authorization":`Bearer ${this.getToken()}`}});
+    const res=await fetch(`${API}/users?role=${role}`,{method:"GET",headers:this.authHeaders()});
     const result=await res.json();
     return result;
   }
 
   static async addStudent(data){
-    const res=await fetch(`${API}/users/student`,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${this.getToken()}`},body:JSON.stringify(data)});
+    const res=await fetch(`${API}/users/student`,{method:"POST",headers:this.authHeaders(),body:JSON.stringify(data)});
 
     const result=await res.json();
     return result;
   }
+
+  // services/classService.ts — add this
+static async getTeacherSchedule (teacherId: string){
+  const res = await fetch(`${API}/users/get-schedule/${teacherId}`,{method:"GET",headers:this.authHeaders()});
+  return res.json();
+}
 }
 
 export default UserService

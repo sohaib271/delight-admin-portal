@@ -1,7 +1,9 @@
+// FacultyDetailView.tsx — full updated component
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Calendar, Clock, User, BookOpen, Users, AlertCircle } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, BookOpen, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTeacherSchedule } from "@/hooks/useTeacherSchedule";
 
 interface FacultyDetailViewProps {
   faculty: any;
@@ -10,77 +12,56 @@ interface FacultyDetailViewProps {
 }
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const TIME_SLOTS = [
-  "08:00 AM", "09:00 AM", "10:00 AM", "11:00 AM",
-  "12:00 PM", "01:00 PM", "02:00 PM", "03:00 PM",
-];
 
-const getMockSchedule = (faculty: any) => {
-  if (!faculty?.assignedClasses || faculty.assignedClasses.length === 0) {
-    const subjects = faculty?.subjects || [];
-    if (subjects.length === 0) return {};
-
-    const schedule: Record<string, { time: string; subject: string; className: string; duration: string }[]> = {};
-    const times = ["08:00 AM", "09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "01:00 PM", "02:00 PM"];
-
-    DAYS.slice(0, 5).forEach((day, di) => {
-      const lectureCount = 2 + (di % 3);
-      schedule[day] = [];
-      for (let i = 0; i < lectureCount; i++) {
-        schedule[day].push({
-          time: times[i + (di % 2)],
-          subject: subjects[i % subjects.length] || "General",
-          className: `ICS-PHY-PB${di + 1}-${i % 2 === 0 ? "I" : "II"}`,
-          duration: "40 mins",
-        });
-      }
-    });
-    return schedule;
-  }
-  return {};
+// ✅ Convert "09:00" → "09:00 AM" / "13:00" → "01:00 PM" for display
+const formatTime = (t: string) => {
+  if (!t) return t;
+  if (t.includes("AM") || t.includes("PM")) return t; // already formatted
+  const [h, m] = t.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const hour   = h > 12 ? h - 12 : h === 0 ? 12 : h;
+  return `${String(hour).padStart(2, "0")}:${String(m).padStart(2, "0")} ${period}`;
 };
 
 const FacultyDetailView = ({ faculty, type, onBack }: FacultyDetailViewProps) => {
   const [showSchedule, setShowSchedule] = useState(false);
   const isProfessor = type === "proff";
-  const schedule = isProfessor ? getMockSchedule(faculty) : {};
-  const hasSchedule = Object.keys(schedule).length > 0;
 
-  // Build a lookup: day+time -> lecture
-  const lookup: Record<string, { subject: string; className: string; duration: string }> = {};
-  const activeDays = DAYS.filter((d) => schedule[d] && schedule[d].length > 0);
-  const activeSlots = new Set<string>();
+  // ✅ Only fetch when viewing schedule tab and is a professor
+  const { schedule, isLoading, error } = useTeacherSchedule(
+    showSchedule && isProfessor ? faculty?._id : null
+  );
 
-  Object.entries(schedule).forEach(([day, lectures]) => {
-    lectures.forEach((lec) => {
-      lookup[`${day}||${lec.time}`] = lec;
-      activeSlots.add(lec.time);
-    });
-  });
-
-  const displaySlots = TIME_SLOTS.filter((t) => activeSlots.has(t));
+  // ✅ Build timetable grid from real schedule data
+  const activeDays  = DAYS.filter((d) => schedule.some((s) => s.day === d));
   const displayDays = activeDays.length > 0 ? activeDays : DAYS.slice(0, 5);
 
+  // Collect unique time slots sorted
+  const allTimes = [...new Set(schedule.map((s) => s.startTime))].sort();
+
+  // Lookup map: day||startTime → entry
+  const lookup: Record<string, typeof schedule[0]> = {};
+  schedule.forEach((s) => { lookup[`${s.day}||${s.startTime}`] = s; });
+
   const details: [string, string][] = [
-    ["First Name", faculty?.name ?? "—"],
-    ["Last Name", faculty?.lastName ?? "—"],
-    ["Email", faculty?.email ?? "—"],
-    ["Phone", faculty?.phone ?? "—"],
-    ["CNIC", faculty?.cnic ?? "—"],
-    ["Gender", faculty?.gender === "M" ? "Male" : faculty?.gender === "F" ? "Female" : "—"],
-    ["City", faculty?.city ?? "—"],
-    ["Address", faculty?.address ?? "—"],
-    ["Date of Joining", faculty?.doj ?? "—"],
-    ...(isProfessor
-      ? [
-          ["HOD", faculty?.isHod ? "Yes" : "No"] as [string, string],
-          ["Department", faculty?.department?.code ?? faculty?.department ?? "—"] as [string, string],
-          ["Qualification", faculty?.qualification ?? "—"] as [string, string],
-          ["Subjects", Array.isArray(faculty?.subjects) ? faculty.subjects.join(", ") : (faculty?.subjects ?? "—")] as [string, string],
-        ]
-      : []),
+    ["First Name",      faculty?.name       ?? "—"],
+    ["Last Name",       faculty?.lastName   ?? "—"],
+    ["Email",           faculty?.email      ?? "—"],
+    ["Phone",           faculty?.phone      ?? "—"],
+    ["CNIC",            faculty?.cnic       ?? "—"],
+    ["Gender",          faculty?.gender === "M" ? "Male" : faculty?.gender === "F" ? "Female" : "—"],
+    ["City",            faculty?.city       ?? "—"],
+    ["Address",         faculty?.address    ?? "—"],
+    ["Date of Joining", faculty?.doj        ?? "—"],
+    ...(isProfessor ? [
+      ["HOD",           faculty?.isHod ? "Yes" : "No"]                                               as [string, string],
+      ["Department",    faculty?.department?.code ?? faculty?.department ?? "—"]                       as [string, string],
+      ["Qualification", faculty?.qualification ?? "—"]                                                as [string, string],
+      ["Subjects",      Array.isArray(faculty?.subjects) ? faculty.subjects.join(", ") : (faculty?.subjects ?? "—")] as [string, string],
+    ] : []),
   ];
 
+  // ── SCHEDULE VIEW ──────────────────────────────────────────
   if (showSchedule && isProfessor) {
     return (
       <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4 sm:space-y-6">
@@ -93,23 +74,44 @@ const FacultyDetailView = ({ faculty, type, onBack }: FacultyDetailViewProps) =>
           </h2>
         </div>
 
-        {!hasSchedule ? (
+        {/* Loading */}
+        {isLoading && (
+          <div className="space-y-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-14 rounded-xl border border-border bg-card animate-pulse" />
+            ))}
+          </div>
+        )}
+
+        {/* Error */}
+        {error && !isLoading && (
+          <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card p-8 text-center">
+            <AlertCircle className="h-10 w-10 text-destructive mb-3" />
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </div>
+        )}
+
+        {/* Empty */}
+        {!isLoading && !error && schedule.length === 0 && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center justify-center rounded-xl border border-border bg-card p-8 sm:p-12 text-center">
             <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="font-display text-lg font-semibold text-foreground mb-2">No Schedule Available</h3>
             <p className="text-sm text-muted-foreground max-w-sm">
-              This professor is not currently assigned to any class.
+              This professor has no schedule assigned yet.
             </p>
           </motion.div>
-        ) : (
+        )}
+
+        {/* ✅ Real timetable grid */}
+        {!isLoading && !error && schedule.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
             className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse min-w-[600px]">
                 <thead>
                   <tr className="bg-secondary/50">
-                    <th className="border-b border-r border-border px-3 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-24">
+                    <th className="border-b border-r border-border px-3 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-28">
                       <div className="flex items-center gap-1.5">
                         <Clock className="h-3.5 w-3.5" /> Time
                       </div>
@@ -123,23 +125,25 @@ const FacultyDetailView = ({ faculty, type, onBack }: FacultyDetailViewProps) =>
                   </tr>
                 </thead>
                 <tbody>
-                  {displaySlots.map((slot, si) => (
+                  {allTimes.map((slot, si) => (
                     <tr key={slot} className={si % 2 === 0 ? "bg-card" : "bg-secondary/20"}>
                       <td className="border-b border-r border-border px-3 py-3 text-xs sm:text-sm font-medium text-foreground whitespace-nowrap">
-                        {slot}
+                        {formatTime(slot)}
                       </td>
                       {displayDays.map((day) => {
-                        const lec = lookup[`${day}||${slot}`];
+                        const entry = lookup[`${day}||${slot}`];
                         return (
                           <td key={day} className="border-b border-r border-border last:border-r-0 px-1.5 py-1.5 text-center align-middle">
-                            {lec ? (
-                              <div className="rounded-lg bg-primary/10 border border-primary/20 px-2 py-2 space-y-0.5 transition-colors hover:bg-primary/15">
+                            {entry ? (
+                              <div className="rounded-lg bg-primary/10 border border-primary/20 px-2 py-2 space-y-0.5 hover:bg-primary/15 transition-colors">
                                 <div className="flex items-center justify-center gap-1">
                                   <BookOpen className="h-3 w-3 text-primary shrink-0" />
-                                  <span className="text-xs sm:text-sm font-semibold text-primary truncate">{lec.subject}</span>
+                                  <span className="text-xs sm:text-sm font-semibold text-primary truncate">{entry.subject}</span>
                                 </div>
-                                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{lec.className}</p>
-                                <p className="text-[10px] text-muted-foreground/70">{lec.duration}</p>
+                                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{entry.className}</p>
+                                <p className="text-[10px] text-muted-foreground/70">
+                                  {formatTime(entry.startTime)} – {formatTime(entry.endTime)}
+                                </p>
                               </div>
                             ) : (
                               <span className="text-xs text-muted-foreground/40">—</span>
@@ -153,21 +157,53 @@ const FacultyDetailView = ({ faculty, type, onBack }: FacultyDetailViewProps) =>
               </table>
             </div>
 
-            {/* Summary */}
+            {/* Summary footer */}
             <div className="flex flex-wrap items-center gap-4 px-4 py-3 border-t border-border bg-secondary/30 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <span className="h-3 w-3 rounded bg-primary/10 border border-primary/20" />
                 Lecture
               </span>
-              <span>Total: <strong className="text-foreground">{Object.values(schedule).reduce((s, l) => s + l.length, 0)}</strong> lectures / week</span>
+              <span>Total: <strong className="text-foreground">{schedule.length}</strong> lectures / week</span>
               <span>Days: <strong className="text-foreground">{activeDays.length}</strong></span>
+              <span>Classes: <strong className="text-foreground">
+                {[...new Set(schedule.map((s) => s.className))].length}
+              </strong></span>
             </div>
           </motion.div>
+        )}
+
+        {/* ✅ List view below the grid for full detail */}
+        {!isLoading && !error && schedule.length > 0 && (
+          <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
+            <div className="px-4 py-3 border-b border-border bg-secondary/30">
+              <p className="text-sm font-semibold text-foreground">Schedule Detail</p>
+            </div>
+            <div className="divide-y divide-border">
+              {schedule.map((s, i) => (
+                <div key={i} className="flex items-center justify-between px-4 py-3 hover:bg-secondary/20 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <BookOpen className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{s.subject}</p>
+                      <p className="text-xs text-muted-foreground">{s.className} · {s.department}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-medium text-foreground">{s.day}</p>
+                    <p className="text-xs text-muted-foreground">{formatTime(s.startTime)} – {formatTime(s.endTime)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </motion.div>
     );
   }
 
+  // ── DETAILS VIEW ───────────────────────────────────────────
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
