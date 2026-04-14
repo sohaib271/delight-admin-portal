@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React from "react";
 import { LayoutDashboard, School, LogOut, X, GraduationCap } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";

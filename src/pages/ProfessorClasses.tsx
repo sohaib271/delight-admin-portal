@@ -1,9 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { School, ChevronLeft, Users, BookOpen, Clock, UserCircle, CalendarDays } from "lucide-react";
 import { useSelector } from "react-redux";
 import ClassService from "@/services/classService";
-import UserService from "@/services/userService";
 import { toast } from "sonner";
 import AttendanceMarker from "@/components/AttendanceMarker";
 
