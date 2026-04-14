@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { motion } from "framer-motion";
+import { ChevronLeft, Save, Check, AlertCircle } from "lucide-react";
 import { ChevronLeft, Save, Check, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import ClassService from "@/services/classService";
@@ -32,13 +32,7 @@ const AttendanceMarker = ({ classData, teacherId, onBack }: Props) => {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const toggleStatus = (studentId: string) => {
-    setAttendance((prev) => {
-      const current = prev[studentId] || "P";
-      const next: AttendanceStatus = current === "P" ? "A" : current === "A" ? "L" : "P";
-      return { ...prev, [studentId]: next };
-    });
-    setSaved(false);
+  const _toggleStatus = (studentId: string) => {
   };
 
   const setAllStatus = (status: AttendanceStatus) => {
