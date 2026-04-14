@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ChevronLeft, Save, Check, AlertCircle } from "lucide-react";
+import { motion } from "framer-motion";
 import { ChevronLeft, Save, Check, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import ClassService from "@/services/classService";
