@@ -67,9 +67,11 @@ const FacultyDetailView = ({ faculty, type, onBack, autoShowSchedule = false }: 
     return (
       <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4 sm:space-y-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-          <Button variant="ghost" size="sm" onClick={() => setShowSchedule(false)} className="gap-1.5 w-fit">
-            <ArrowLeft className="h-4 w-4" /> Back to Details
-          </Button>
+          {!autoShowSchedule && (
+            <Button variant="ghost" size="sm" onClick={() => setShowSchedule(false)} className="gap-1.5 w-fit">
+              <ArrowLeft className="h-4 w-4" /> Back to Details
+            </Button>
+          )}
           <h2 className="font-display text-lg sm:text-xl font-bold text-foreground">
             {faculty?.name} {faculty?.lastName}'s Timetable
           </h2>

@@ -32,7 +32,7 @@ const AttendanceMarker = ({ classData, teacherId, onBack }: Props) => {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const _toggleStatus = (studentId: string) => {
+  const _toggleStatus = (_studentId: string) => {
   };
 
   const setAllStatus = (status: AttendanceStatus) => {
@@ -170,7 +170,7 @@ const AttendanceMarker = ({ classData, teacherId, onBack }: Props) => {
               {students.map((s: any, i: number) => {
                 const sid = s?._id || s;
                 const status = attendance[sid] || "P";
-                const config = statusConfig[status];
+                const _config = statusConfig[status];
 
                 return (
                   <motion.tr
