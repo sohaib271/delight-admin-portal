@@ -5,42 +5,15 @@ import { useSelector } from "react-redux";
 import ClassService from "@/services/classService";
 import { toast } from "sonner";
 import AttendanceMarker from "@/components/AttendanceMarker";
+import { useMyClasses } from "@/hooks/useMyClasses";
 
 type View = "list" | "classDetail" | "attendance";
 
 const ProfessorClasses = () => {
   const user = useSelector((state: any) => state?.user.user);
-  const [classes, setClasses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {data:classes,isLoading:loading}=useMyClasses();
   const [view, setView] = useState<View>("list");
   const [selectedClass, setSelectedClass] = useState<any>(null);
-
-  // Fetch all classes & filter ones where this professor is assigned
-  useEffect(() => {
-    const fetchClasses = async () => {
-      setLoading(true);
-      try {
-        // Fetch both categories
-        const [inter, bsAdp] = await Promise.all([
-          ClassService.getClasses("intermediate"),
-          ClassService.getClasses("bs_adp"),
-        ]);
-        const allClasses = [...(inter || []), ...(bsAdp || [])];
-        const myClasses = allClasses.filter((cls: any) =>
-          (cls.assignes || []).some((a: any) => {
-            const tid = typeof a.teacherId === "object" ? a.teacherId?._id : a.teacherId;
-            return tid === user?._id;
-          })
-        );
-        setClasses(myClasses);
-      } catch {
-        toast.error("Failed to load classes");
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (user?._id) fetchClasses();
-  }, [user?._id]);
 
   const getMyAssignment = (cls: any) => {
     return (cls.assignes || []).find((a: any) => {

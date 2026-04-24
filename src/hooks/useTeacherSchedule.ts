@@ -14,18 +14,24 @@ export interface ScheduleEntry {
   department: string;
 }
 
-export const useTeacherSchedule = (teacherId: string | null) => {
+export const useTeacherSchedule = (teacherId: string | null | undefined) => {
   const [schedule,  setSchedule]  = useState<ScheduleEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error,     setError]     = useState<string | null>(null);
 
   useEffect(() => {
-    if (!teacherId) return;
-    let cancelled = false;
+    // ✅ Don't fetch if no valid ID
+    if (!teacherId || typeof teacherId !== "string" || !teacherId.trim()) {
+      setSchedule([]);
+      setIsLoading(false);
+      return;
+    }
 
-    const fetch = async () => {
-      setIsLoading(true);
-      setError(null);
+    let cancelled = false;
+    setIsLoading(true);
+    setError(null);
+
+    const load = async () => {
       try {
         const res = await UserService.getTeacherSchedule(teacherId);
         if (!cancelled) setSchedule(res?.schedule ?? []);
@@ -36,7 +42,7 @@ export const useTeacherSchedule = (teacherId: string | null) => {
       }
     };
 
-    fetch();
+    load();
     return () => { cancelled = true; };
   }, [teacherId]);
 

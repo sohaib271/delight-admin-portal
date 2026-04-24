@@ -32,13 +32,12 @@ const Login = () => {
   setLoading(true);
 
   try {
-    const res = await AuthService.adminLogin({ email, password });
+    const res = await AuthService.login({ email, password });
     if (res?.error) {
       toast.error(res?.message);
       setLoading(false);
       return;
     }
-
     // ❌ REMOVE THIS (important)
     dispatch(setUser({
   user: res?.user,

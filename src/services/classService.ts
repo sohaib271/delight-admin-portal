@@ -33,6 +33,14 @@ class ClassService {
     return res.json();
   }
 
+  static async getMyClasses() {
+    const res = await fetch(`${API}/class/my-classes`, {
+      method: "GET",
+      headers: this.authHeaders(),
+    });
+    return res.json();
+  }
+
   static async getClassInfo(classId: string) {
     const res = await fetch(`${API}/class/get-class-info/${classId}`, {
       method: "GET",
@@ -196,21 +204,52 @@ class ClassService {
 
   // ─── Attendance ─────────────────────────────────────────────
 
-  static async markAttendance(
-    classId: string,
-    data: {
-      date: string;
-      teacherId: string;
-      attendance: { studentId: string; status: string }[];
-    }
-  ) {
-    const res = await fetch(`${API}/class/${classId}/attendance`, {
-      method: "POST",
-      headers: this.authHeaders(),
-      body: JSON.stringify(data),
-    });
-    return res.json();
-  }
+ // classService.ts — add these
+static async markBulkAttendance(data: {
+  classId: string;
+  teacherId: string;
+  date: string;
+  lectureNumber?: number;
+  records: { studentId: string; attendenceStatus: string }[];
+}) {
+  const res = await fetch(`${API}/attendance/mark-bulk`, {
+    method: "POST",
+    headers: this.authHeaders(),
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+static async updateStudentAttendance(attendanceId: string, data: {
+  classId: string;
+  teacherId: string;
+  studentId: string;
+  attendenceStatus: string;
+}) {
+  const res = await fetch(`${API}/attendance/update/${attendanceId}`, {
+    method: "PATCH",
+    headers: this.authHeaders(),
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+static async getClassAttendanceByTeacher(classId: string, teacherId: string, date: string) {
+  const res = await fetch(
+    `${API}/attendance/class/${classId}/by-teacher?teacherId=${teacherId}&date=${date}`,
+    { method: "GET", headers: this.authHeaders() }
+  );
+  return res.json();
+}
+
+static async getMyAttendanceHistory(teacherId: string, classId?: string) {
+  const query = classId ? `?teacherId=${teacherId}&classId=${classId}` : `?teacherId=${teacherId}`;
+  const res = await fetch(`${API}/attendance/my-history${query}`, {
+    method: "GET",
+    headers: this.authHeaders(),
+  });
+  return res.json();
+}
 
   static async getAttendance(classId: string, date: string) {
     const res = await fetch(`${API}/class/${classId}/attendance?date=${date}`, {

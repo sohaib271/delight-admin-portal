@@ -25,6 +25,16 @@ const formatTime = (t: string) => {
 };
 
 const FacultyDetailView = ({ faculty, type, onBack, autoShowSchedule = false }: FacultyDetailViewProps) => {
+
+  if (!faculty) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-16 rounded-xl border border-border bg-card animate-pulse" />
+        ))}
+      </div>
+    );
+  }
   const [showSchedule, setShowSchedule] = useState(autoShowSchedule);
   const isProfessor = type === "proff";
 
@@ -32,7 +42,6 @@ const FacultyDetailView = ({ faculty, type, onBack, autoShowSchedule = false }: 
   const { schedule, isLoading, error } = useTeacherSchedule(
     showSchedule && isProfessor ? faculty?._id : null
   );
-
   // ✅ Build timetable grid from real schedule data
   const activeDays  = DAYS.filter((d) => schedule.some((s) => s.day === d));
   const displayDays = activeDays.length > 0 ? activeDays : DAYS.slice(0, 5);
@@ -106,74 +115,142 @@ const FacultyDetailView = ({ faculty, type, onBack, autoShowSchedule = false }: 
           </motion.div>
         )}
 
-        {/* ✅ Real timetable grid */}
-        {!isLoading && !error && schedule.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse min-w-[600px]">
-                <thead>
-                  <tr className="bg-secondary/50">
-                    <th className="border-b border-r border-border px-3 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-28">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="h-3.5 w-3.5" /> Time
-                      </div>
-                    </th>
-                    {displayDays.map((day) => (
-                      <th key={day} className="border-b border-r border-border last:border-r-0 px-3 py-3 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        <span className="hidden sm:inline">{day}</span>
-                        <span className="sm:hidden">{day.slice(0, 3)}</span>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {allTimes.map((slot, si) => (
-                    <tr key={slot} className={si % 2 === 0 ? "bg-card" : "bg-secondary/20"}>
-                      <td className="border-b border-r border-border px-3 py-3 text-xs sm:text-sm font-medium text-foreground whitespace-nowrap">
-                        {formatTime(slot)}
-                      </td>
-                      {displayDays.map((day) => {
-                        const entry = lookup[`${day}||${slot}`];
-                        return (
-                          <td key={day} className="border-b border-r border-border last:border-r-0 px-1.5 py-1.5 text-center align-middle">
-                            {entry ? (
-                              <div className="rounded-lg bg-primary/10 border border-primary/20 px-2 py-2 space-y-0.5 hover:bg-primary/15 transition-colors">
-                                <div className="flex items-center justify-center gap-1">
-                                  <BookOpen className="h-3 w-3 text-primary shrink-0" />
-                                  <span className="text-xs sm:text-sm font-semibold text-primary truncate">{entry.subject}</span>
-                                </div>
-                                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{entry.className}</p>
-                                <p className="text-[10px] text-muted-foreground/70">
-                                  {formatTime(entry.startTime)} – {formatTime(entry.endTime)}
-                                </p>
-                              </div>
-                            ) : (
-                              <span className="text-xs text-muted-foreground/40">—</span>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        {/* ✅ Real timetable grid with past/upcoming differentiation */}
+{!isLoading && !error && schedule.length > 0 && (
+  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+    className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
 
-            {/* Summary footer */}
-            <div className="flex flex-wrap items-center gap-4 px-4 py-3 border-t border-border bg-secondary/30 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <span className="h-3 w-3 rounded bg-primary/10 border border-primary/20" />
-                Lecture
-              </span>
-              <span>Total: <strong className="text-foreground">{schedule.length}</strong> lectures / week</span>
-              <span>Days: <strong className="text-foreground">{activeDays.length}</strong></span>
-              <span>Classes: <strong className="text-foreground">
-                {[...new Set(schedule.map((s) => s.className))].length}
-              </strong></span>
-            </div>
-          </motion.div>
-        )}
+    {/* ✅ Legend */}
+    <div className="flex flex-wrap items-center gap-4 px-4 py-2.5 border-b border-border bg-secondary/20 text-xs text-muted-foreground">
+      <span className="flex items-center gap-1.5">
+        <span className="h-3 w-3 rounded bg-primary/10 border border-primary/20" /> Upcoming
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span className="h-3 w-3 rounded bg-secondary border border-border" /> Completed
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span className="h-3 w-3 rounded bg-green-100 border border-green-300" /> In Progress
+      </span>
+    </div>
+
+    <div className="overflow-x-auto">
+      <table className="w-full border-collapse min-w-[600px]">
+        <thead>
+          <tr className="bg-secondary/50">
+            <th className="border-b border-r border-border px-3 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-28">
+              <div className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> Time</div>
+            </th>
+            {displayDays.map((day) => {
+              // ✅ Highlight today's column header
+              const today    = new Date();
+              const dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+              const isToday  = dayNames[today.getDay()] === day;
+              return (
+                <th key={day} className={`border-b border-r border-border last:border-r-0 px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider ${
+                  isToday ? "text-primary bg-primary/5" : "text-muted-foreground"
+                }`}>
+                  <span className="hidden sm:inline">{day}</span>
+                  <span className="sm:hidden">{day.slice(0, 3)}</span>
+                  {isToday && <span className="block text-[10px] normal-case font-normal text-primary/70">Today</span>}
+                </th>
+              );
+            })}
+          </tr>
+        </thead>
+        <tbody>
+          {allTimes.map((slot, si) => (
+            <tr key={slot} className={si % 2 === 0 ? "bg-card" : "bg-secondary/20"}>
+              <td className="border-b border-r border-border px-3 py-3 text-xs sm:text-sm font-medium text-foreground whitespace-nowrap">
+                {formatTime(slot)}
+              </td>
+              {displayDays.map((day) => {
+                const entry = lookup[`${day}||${slot}`];
+                if (!entry) return (
+                  <td key={day} className="border-b border-r border-border last:border-r-0 px-1.5 py-1.5 text-center align-middle">
+                    <span className="text-xs text-muted-foreground/40">—</span>
+                  </td>
+                );
+
+                // ✅ Determine lecture status
+                const now      = new Date();
+                const dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+                const todayName = dayNames[now.getDay()];
+                const nowMins  = now.getHours() * 60 + now.getMinutes();
+                const [sh, sm] = entry.startTime.split(":").map(Number);
+                const [eh, em] = entry.endTime.split(":").map(Number);
+                const startMins = sh * 60 + sm;
+                const endMins   = eh * 60 + em;
+
+                // Day index comparison (treat week order: Mon=0 ... Sat=5)
+                const weekOrder  = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+                const entryDayIdx = weekOrder.indexOf(day);
+                const todayIdx    = weekOrder.indexOf(todayName);
+
+                let lectureState: "past" | "inprogress" | "upcoming" = "upcoming";
+
+                if (entryDayIdx < todayIdx) {
+                  lectureState = "past";
+                } else if (entryDayIdx === todayIdx) {
+                  if (nowMins > endMins)   lectureState = "past";
+                  else if (nowMins >= startMins) lectureState = "inprogress";
+                  else lectureState = "upcoming";
+                }
+
+                const cellStyle =
+                  lectureState === "inprogress"
+                    ? "bg-green-100 border-green-300 hover:bg-green-200"
+                    : lectureState === "past"
+                      ? "bg-secondary/60 border-border opacity-60"
+                      : "bg-primary/10 border-primary/20 hover:bg-primary/15";
+
+                const textStyle =
+                  lectureState === "inprogress" ? "text-green-700"
+                  : lectureState === "past"     ? "text-muted-foreground"
+                  : "text-primary";
+
+                return (
+                  <td key={day} className="border-b border-r border-border last:border-r-0 px-1.5 py-1.5 text-center align-middle">
+                    <div className={`rounded-lg border px-2 py-2 space-y-0.5 transition-colors relative ${cellStyle}`}>
+                      {/* ✅ Status indicator dot */}
+                      <div className={`absolute top-1.5 right-1.5 h-2 w-2 rounded-full ${
+                        lectureState === "inprogress" ? "bg-green-500 animate-pulse"
+                        : lectureState === "past"     ? "bg-muted-foreground/40"
+                        : "bg-primary/60"
+                      }`} />
+                      <div className="flex items-center justify-center gap-1">
+                        <BookOpen className={`h-3 w-3 shrink-0 ${textStyle}`} />
+                        <span className={`text-xs sm:text-sm font-semibold truncate ${textStyle}`}>{entry.subject}</span>
+                      </div>
+                      <p className={`text-[10px] sm:text-xs truncate ${lectureState === "past" ? "text-muted-foreground/60" : "text-muted-foreground"}`}>
+                        {entry.className}
+                      </p>
+                      <p className={`text-[10px] ${lectureState === "past" ? "text-muted-foreground/50" : "text-muted-foreground/70"}`}>
+                        {formatTime(entry.startTime)} – {formatTime(entry.endTime)}
+                      </p>
+                      {lectureState === "inprogress" && (
+                        <p className="text-[10px] font-semibold text-green-700">● Live</p>
+                      )}
+                      {lectureState === "past" && (
+                        <p className="text-[10px] text-muted-foreground/50">Completed</p>
+                      )}
+                    </div>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    {/* Summary footer */}
+    <div className="flex flex-wrap items-center gap-4 px-4 py-3 border-t border-border bg-secondary/30 text-xs text-muted-foreground">
+      <span>Total: <strong className="text-foreground">{schedule.length}</strong> lectures/week</span>
+      <span>Days: <strong className="text-foreground">{activeDays.length}</strong></span>
+      <span>Classes: <strong className="text-foreground">{[...new Set(schedule.map((s) => s.className))].length}</strong></span>
+    </div>
+  </motion.div>
+)}
 
         {/* ✅ List view below the grid for full detail */}
         {!isLoading && !error && schedule.length > 0 && (
